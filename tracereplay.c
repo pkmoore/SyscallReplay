@@ -30,7 +30,7 @@
 #include <signal.h>
 #include <sys/uio.h>
 
-static PyObject* TraceReplayError;
+static PyObject* SyscallReplayError;
 
 bool DEBUG = false;
 bool INFO = false;
@@ -84,7 +84,7 @@ int copy_child_process_memory_into_buffer(pid_t child,
             t = ptrace(PTRACE_PEEKDATA, child, addr, NULL);
             if(errno != 0) {
                 perror("C: peek_data: error string: ");
-                PyErr_SetString(TraceReplayError,
+                PyErr_SetString(SyscallReplayError,
                                 "large peek failed in copy child\n");
             }
             if(DEBUG) {
@@ -141,7 +141,7 @@ int copy_buffer_into_child_process_memory(pid_t child,
             printf("\n");
         }
         if((ptrace(PTRACE_POKEDATA, child, addr, *((int*)&temp_buffer)) == -1)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Failed to poke small buffer in copy buffer");
         }
     }
@@ -152,7 +152,7 @@ int copy_buffer_into_child_process_memory(pid_t child,
                     *((int*)&buffer[i]), addr);
             }
             if((ptrace(PTRACE_POKEDATA, child, addr, *((int*)&buffer[i])) == -1)) {
-                PyErr_SetString(TraceReplayError,
+                PyErr_SetString(SyscallReplayError,
                                 "Failed to poke large buffer in copy buffer\n");
             }
             addr++;
@@ -161,13 +161,13 @@ int copy_buffer_into_child_process_memory(pid_t child,
     return 0;
 }
 
-static PyObject* tracereplay_populate_readv_vectors(PyObject* self,
+static PyObject* syscallreplay_populate_readv_vectors(PyObject* self,
                                                     PyObject* args) {
     pid_t child;
     void* addr;
     PyObject* iovs;
     if(!PyArg_ParseTuple(args, "IIO", &child, &addr, &iovs)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "populate_readv_vectors arg parse failed");
     }
     if(DEBUG) {
@@ -175,7 +175,7 @@ static PyObject* tracereplay_populate_readv_vectors(PyObject* self,
         printf("C: readv: addr: %p\n", addr);
     }
     if(!PyList_Check(iovs)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "list of iovs is not a list");
     }
     PyObject* iter;
@@ -193,17 +193,17 @@ static PyObject* tracereplay_populate_readv_vectors(PyObject* self,
 
     while(next){
         if(!PyDict_Check(next)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-dict object in iovs list");
         }
         iov_data_obj = PyDict_GetItemString(next, "iov_data");
         if(!PyString_Check(iov_data_obj)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-string object in iov_data");
         }
         iov_len_obj = PyDict_GetItemString(next, "iov_len");
         if(!PyInt_Check(iov_len_obj)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-int object in iov_len");
         }
         
@@ -238,14 +238,14 @@ struct linux_dirent64 {
     char d_name[];
 };
 
-static PyObject* tracereplay_populate_getdents64_structure(PyObject* self,
+static PyObject* syscallreplay_populate_getdents64_structure(PyObject* self,
                                                            PyObject* args) {
     pid_t child;
     void* addr;
     PyObject* dents;
     size_t retlen;
     if(!PyArg_ParseTuple(args, "IIOI", &child, &addr, &dents, &retlen)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "populate_getdents64_structure arg parse failed");
     }
     if(DEBUG) {
@@ -254,7 +254,7 @@ static PyObject* tracereplay_populate_getdents64_structure(PyObject* self,
     }
 
     if(!PyList_Check(dents)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "list of dents is not a list");
     }
 
@@ -282,32 +282,32 @@ static PyObject* tracereplay_populate_getdents64_structure(PyObject* self,
     next = PyIter_Next(iter);
     while(next) {
         if(!PyDict_Check(next)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-dict object in dents list");
         }
         d_ino_obj = PyDict_GetItemString(next, "d_ino");
         if(!PyInt_Check(d_ino_obj)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-int object in d_ino");
         }
         d_name_obj = PyDict_GetItemString(next, "d_name");
         if(!PyString_Check(d_name_obj)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-string object in d_name");
         }
         d_reclen_obj = PyDict_GetItemString(next, "d_reclen");
         if(!PyInt_Check(d_reclen_obj)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-int object in d_reclen");
         }
         d_type_obj = PyDict_GetItemString(next, "d_type");
         if(!PyInt_Check(d_type_obj)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-int object in d_type");
         }
         d_off_obj = PyDict_GetItemString(next, "d_off");
         if(!PyInt_Check(d_off_obj)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-int object in d_off");
         }
         d_ino = (unsigned long)PyInt_AsLong(d_ino_obj);
@@ -358,14 +358,14 @@ static PyObject* tracereplay_populate_getdents64_structure(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_getdents_structure(PyObject* self,
+static PyObject* syscallreplay_populate_getdents_structure(PyObject* self,
                                                          PyObject* args) {
     pid_t child;
     void* addr;
     PyObject* dents;
     size_t retlen;
     if(!PyArg_ParseTuple(args, "IIOI", &child, &addr, &dents, &retlen)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "populate_getdents64_structure arg parse failed");
     }
     if(DEBUG) {
@@ -374,7 +374,7 @@ static PyObject* tracereplay_populate_getdents_structure(PyObject* self,
     }
 
     if(!PyList_Check(dents)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "list of dents is not a list");
     }
 
@@ -402,32 +402,32 @@ static PyObject* tracereplay_populate_getdents_structure(PyObject* self,
     next = PyIter_Next(iter);
     while(next) {
         if(!PyDict_Check(next)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-dict object in dents list");
         }
         d_ino_obj = PyDict_GetItemString(next, "d_ino");
         if(!PyInt_Check(d_ino_obj)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-int object in d_ino");
         }
         d_name_obj = PyDict_GetItemString(next, "d_name");
         if(!PyString_Check(d_name_obj)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-string object in d_name");
         }
         d_reclen_obj = PyDict_GetItemString(next, "d_reclen");
         if(!PyInt_Check(d_reclen_obj)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-int object in d_reclen");
         }
         d_type_obj = PyDict_GetItemString(next, "d_type");
         if(!PyInt_Check(d_type_obj)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-int object in d_type");
         }
         d_off_obj = PyDict_GetItemString(next, "d_off");
         if(!PyInt_Check(d_off_obj)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Encountered non-int object in d_off");
         }
         d_ino = (unsigned long)PyInt_AsLong(d_ino_obj);
@@ -472,14 +472,14 @@ static PyObject* tracereplay_populate_getdents_structure(PyObject* self,
                                           retlen);
     Py_RETURN_NONE;
 }
-static PyObject* tracereplay_populate_pipefd_array(PyObject* self,
+static PyObject* syscallreplay_populate_pipefd_array(PyObject* self,
                                                    PyObject* args) {
     pid_t child;
     void* addr;
     unsigned int read_end;
     unsigned int write_end;
     if(!PyArg_ParseTuple(args, "IIII", &child, &addr, &read_end, &write_end)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "populate_pipefd_array arg parse failed");
     }
     if(DEBUG) {
@@ -498,7 +498,7 @@ static PyObject* tracereplay_populate_pipefd_array(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_copy_address_range(PyObject* self,
+static PyObject* syscallreplay_copy_address_range(PyObject* self,
                                                 PyObject* args) {
     // Unused paramater
     self = self;
@@ -507,7 +507,7 @@ static PyObject* tracereplay_copy_address_range(PyObject* self,
     void* end;
     unsigned char* buf;
     if(!PyArg_ParseTuple(args, "III", &child, &start, &end)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "copy_address_range arg parse failed");
     }
     if(DEBUG) {
@@ -526,7 +526,7 @@ static PyObject* tracereplay_copy_address_range(PyObject* self,
     return result;
 }
 
-static PyObject* tracereplay_populate_timespec_structure(PyObject* self,
+static PyObject* syscallreplay_populate_timespec_structure(PyObject* self,
                                                          PyObject* args) {
     // unused
     self = self;
@@ -535,7 +535,7 @@ static PyObject* tracereplay_populate_timespec_structure(PyObject* self,
     time_t seconds;
     long nanoseconds;
     if(!PyArg_ParseTuple(args, "iiil", &child, &addr, &seconds, &nanoseconds)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "copy_bytes failed parse failed");
     }
     if(DEBUG) {
@@ -557,7 +557,7 @@ static PyObject* tracereplay_populate_timespec_structure(PyObject* self,
     Py_RETURN_NONE; 
 }
 
-static PyObject* tracereplay_populate_itimerspec_structure(PyObject* self,
+static PyObject* syscallreplay_populate_itimerspec_structure(PyObject* self,
 							  PyObject* args) {
 
     // unused
@@ -572,7 +572,7 @@ static PyObject* tracereplay_populate_itimerspec_structure(PyObject* self,
     if(!PyArg_ParseTuple(args, "iiilil", &child, &addr,
 			 &interval_seconds, &interval_nanoseconds,
 			 &value_seconds, &value_nanoseconds)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "copy_bytes failed parse failed");
     }
     if(DEBUG) {
@@ -606,7 +606,7 @@ static PyObject* tracereplay_populate_itimerspec_structure(PyObject* self,
 }
 
 
-static PyObject* tracereplay_populate_timer_t_structure(PyObject* self,
+static PyObject* syscallreplay_populate_timer_t_structure(PyObject* self,
                                                         PyObject* args) {
   self = self;
   pid_t child;
@@ -615,7 +615,7 @@ static PyObject* tracereplay_populate_timer_t_structure(PyObject* self,
   int    timerid;
 
   if(!PyArg_ParseTuple(args, "iIi", &child, &addr, &timerid)) {
-    PyErr_SetString(TraceReplayError,
+    PyErr_SetString(SyscallReplayError,
 		    "copy_bytes failed parse failed");
   }
 
@@ -636,7 +636,7 @@ static PyObject* tracereplay_populate_timer_t_structure(PyObject* self,
   Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_timeval_structure(PyObject* self,
+static PyObject* syscallreplay_populate_timeval_structure(PyObject* self,
                                                         PyObject* args) {
     // unused
     self = self;
@@ -645,7 +645,7 @@ static PyObject* tracereplay_populate_timeval_structure(PyObject* self,
     time_t seconds;
     suseconds_t microseconds;
     if(!PyArg_ParseTuple(args, "iiil", &child, &addr, &seconds, &microseconds)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "copy_bytes failed parse failed");
     }
     if(DEBUG) {
@@ -667,7 +667,7 @@ static PyObject* tracereplay_populate_timeval_structure(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_copy_bytes_into_child_process(PyObject* self,
+static PyObject* syscallreplay_copy_bytes_into_child_process(PyObject* self,
                                                           PyObject* args) {
     // unused
     self = self;
@@ -676,7 +676,7 @@ static PyObject* tracereplay_copy_bytes_into_child_process(PyObject* self,
     unsigned char* bytes;
     Py_ssize_t num_bytes;
     if(!PyArg_ParseTuple(args, "iis#", &child, &addr, &bytes, &num_bytes)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "copy_bytes failed parse failed");
     }
     int i;
@@ -692,7 +692,7 @@ static PyObject* tracereplay_copy_bytes_into_child_process(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_winsize_structure(PyObject* self,
+static PyObject* syscallreplay_populate_winsize_structure(PyObject* self,
                                                         PyObject* args) {
     // unused
     self = self;
@@ -704,7 +704,7 @@ static PyObject* tracereplay_populate_winsize_structure(PyObject* self,
     unsigned short ws_ypixel;
     if(!PyArg_ParseTuple(args, "iihhhh", &child, &addr, &ws_row, &ws_col,
                          &ws_xpixel, &ws_ypixel)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "pop_winsize parse fialed");
     }
     if(DEBUG) {
@@ -739,7 +739,7 @@ static PyObject* tracereplay_populate_winsize_structure(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_af_inet_sockaddr(PyObject* self,
+static PyObject* syscallreplay_populate_af_inet_sockaddr(PyObject* self,
                                                        PyObject* args) {
     // unused
     self = self;
@@ -838,7 +838,7 @@ static PyObject* tracreplay_populate_statfs64_structure(PyObject* self,
 }
 
 
-static PyObject* tracereplay_populate_tcgets_response(PyObject* self,
+static PyObject* syscallreplay_populate_tcgets_response(PyObject* self,
 						      PyObject* args) {
     // unused
     self = self;
@@ -912,7 +912,7 @@ static PyObject* tracereplay_populate_tcgets_response(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_rlimit_structure(PyObject* self,
+static PyObject* syscallreplay_populate_rlimit_structure(PyObject* self,
                                                        PyObject* args) {
     // unused
     self = self;
@@ -948,7 +948,7 @@ static PyObject* tracereplay_populate_rlimit_structure(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_uname_structure(PyObject* self,
+static PyObject* syscallreplay_populate_uname_structure(PyObject* self,
                                                      PyObject* args) {
     // unused
     self = self;
@@ -986,7 +986,7 @@ static PyObject* tracereplay_populate_uname_structure(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_char_buffer(PyObject* self,
+static PyObject* syscallreplay_populate_char_buffer(PyObject* self,
                                                   PyObject* args) {
     // unused
     self = self;
@@ -1009,7 +1009,7 @@ static PyObject* tracereplay_populate_char_buffer(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_int(PyObject* self,
+static PyObject* syscallreplay_populate_int(PyObject* self,
                                           PyObject* args) {
     // unused
     self = self;
@@ -1017,7 +1017,7 @@ static PyObject* tracereplay_populate_int(PyObject* self,
     void* addr;
     int data;
     if(!PyArg_ParseTuple(args, "iii", &child, &addr, &data)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "populate_int arg parse failed");
     }
     if(DEBUG) {
@@ -1032,7 +1032,7 @@ static PyObject* tracereplay_populate_int(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_unsigned_int(PyObject* self,
+static PyObject* syscallreplay_populate_unsigned_int(PyObject* self,
                                           PyObject* args) {
     // unused
     self = self;
@@ -1040,7 +1040,7 @@ static PyObject* tracereplay_populate_unsigned_int(PyObject* self,
     void* addr;
     int data;
     if(!PyArg_ParseTuple(args, "III", &child, &addr, &data)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "populate_int arg parse failed");
     }
     if(DEBUG) {
@@ -1055,7 +1055,7 @@ static PyObject* tracereplay_populate_unsigned_int(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_stack_structure(PyObject* self,
+static PyObject* syscallreplay_populate_stack_structure(PyObject* self,
                                                       PyObject* args) {
     // unused
     self = self;
@@ -1070,7 +1070,7 @@ static PyObject* tracereplay_populate_stack_structure(PyObject* self,
                          (int*)&ss_sp,
                          (int*)&ss_flags,
                          (unsigned int*)&ss_size)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "populate_stack arg parse failed");
     }
     if(DEBUG) {
@@ -1092,7 +1092,7 @@ static PyObject* tracereplay_populate_stack_structure(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_cpu_set(PyObject* self,
+static PyObject* syscallreplay_populate_cpu_set(PyObject* self,
                                               PyObject* args) {
     // unused
     self = self;
@@ -1102,7 +1102,7 @@ static PyObject* tracereplay_populate_cpu_set(PyObject* self,
     if(!PyArg_ParseTuple(args, "iii", (int*)&child,
                                       (int*)&addr,
                                       (int*)&cpu_value)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "populate_cpu_set arg parse failed");
     }
     if(DEBUG) {
@@ -1119,7 +1119,7 @@ static PyObject* tracereplay_populate_cpu_set(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_llseek_result(PyObject* self,
+static PyObject* syscallreplay_populate_llseek_result(PyObject* self,
                                                     PyObject* args) {
     // unused
     self = self;
@@ -1146,7 +1146,7 @@ struct kernel_sigaction {
   sigset_t sa_mask;
 };
 
-static PyObject* tracereplay_populate_rt_sigaction_struct(PyObject* self,
+static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
 		 					  PyObject* args) {
   if (DEBUG) {
     printf("C: Entering populate rt_sigaction_struct\n");
@@ -1174,7 +1174,7 @@ static PyObject* tracereplay_populate_rt_sigaction_struct(PyObject* self,
 						      &old_sa_restorer);
 
   if (argument_population_failed) {
-    PyErr_SetString(TraceReplayError, "populate rt_sigaction data failed");
+    PyErr_SetString(SyscallReplayError, "populate rt_sigaction data failed");
   }
 
   if (DEBUG) {
@@ -1201,7 +1201,7 @@ static PyObject* tracereplay_populate_rt_sigaction_struct(PyObject* self,
   PyObject* next = PyIter_Next(iter);
   while (next) {
     if (!PyInt_Check(next)) {
-      PyErr_SetString(TraceReplayError, "Encountered non-Int in mask list");
+      PyErr_SetString(SyscallReplayError, "Encountered non-Int in mask list");
     }
     
     int sig = (int)PyInt_AsLong(next);
@@ -1234,7 +1234,7 @@ static PyObject* tracereplay_populate_rt_sigaction_struct(PyObject* self,
   Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_populate_stat64_struct(PyObject* self,
+static PyObject* syscallreplay_populate_stat64_struct(PyObject* self,
                                                     PyObject* args) {
     // unused
     self = self;
@@ -1266,7 +1266,7 @@ static PyObject* tracereplay_populate_stat64_struct(PyObject* self,
                     &st_size,      (int*)&st_mode,
                     (int*)&st_uid,       &st_ino,    (int*)&st__ctime,
                     (int*)&st__mtime,    (int*)&st__atime)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "populate_stat64_struct arg parse fialed");
     }
     if(DEBUG) {
@@ -1349,7 +1349,7 @@ static PyObject* tracereplay_populate_stat64_struct(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_get_select_fds(PyObject* self,
+static PyObject* syscallreplay_get_select_fds(PyObject* self,
                                             PyObject* args) {
     // unused
     self = self;
@@ -1357,7 +1357,7 @@ static PyObject* tracereplay_get_select_fds(PyObject* self,
     void* addr;
 
     if(!PyArg_ParseTuple(args, "ii", &child, &addr)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "C: get_select_fds: arg parse failed");
     }
     if(DEBUG) {
@@ -1382,7 +1382,7 @@ static PyObject* tracereplay_get_select_fds(PyObject* self,
     return list;
 }
 
-static PyObject* tracereplay_populate_select_bitmaps(PyObject* self,
+static PyObject* syscallreplay_populate_select_bitmaps(PyObject* self,
                                                      PyObject* args) {
     // unused
     self = self;
@@ -1412,21 +1412,21 @@ static PyObject* tracereplay_populate_select_bitmaps(PyObject* self,
     PyObject* next;
     size_t fd;
     if(!PyList_Check(readfds_list)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "readfds_list received in C code is not a list");
     }
     if(!PyList_Check(writefds_list)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "writefds_list received in C code is not a list");
     }
     if(!PyList_Check(exceptfds_list)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "except_list received in C code is not a list");
     }
     PyObject* iter;
     if(readfds_addr != 0) {
         if(!(iter = PyObject_GetIter(readfds_list))) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Couldn't get iterator for list of readfds");
         }
         if(DEBUG) {
@@ -1438,7 +1438,7 @@ static PyObject* tracereplay_populate_select_bitmaps(PyObject* self,
         FD_ZERO(&tmp);
         while(next) {
             if(!PyInt_Check(next)) {
-                PyErr_SetString(TraceReplayError,
+                PyErr_SetString(SyscallReplayError,
                                 "Encountered non-Int in list of readfds");
             }
             fd = PyInt_AsSsize_t(next);
@@ -1454,7 +1454,7 @@ static PyObject* tracereplay_populate_select_bitmaps(PyObject* self,
     }
     if(writefds_addr != 0 ) {
         if(!(iter = PyObject_GetIter(writefds_list))) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Couldn't get iterator for list of writefds");
         }
         if(DEBUG) {
@@ -1467,7 +1467,7 @@ static PyObject* tracereplay_populate_select_bitmaps(PyObject* self,
         FD_ZERO(&tmp);
         while(next) {
             if(!PyInt_Check(next)) {
-                PyErr_SetString(TraceReplayError,
+                PyErr_SetString(SyscallReplayError,
                                 "Encountered non-Int in list of writefds");
             }
             fd = PyInt_AsSsize_t(next);
@@ -1482,7 +1482,7 @@ static PyObject* tracereplay_populate_select_bitmaps(PyObject* self,
     }
     if(exceptfds_addr != 0) {
         if(!(iter = PyObject_GetIter(exceptfds_list))) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                             "Couldn't get iterator for list of exceptfds");
         }
         if(DEBUG) {
@@ -1494,7 +1494,7 @@ static PyObject* tracereplay_populate_select_bitmaps(PyObject* self,
         FD_ZERO(&tmp);
         while(next) {
             if(!PyInt_Check(next)) {
-                PyErr_SetString(TraceReplayError,
+                PyErr_SetString(SyscallReplayError,
                                 "Encountered non-Int in list of exceptfds");
             }
             fd = PyInt_AsSsize_t(next);
@@ -1510,14 +1510,14 @@ static PyObject* tracereplay_populate_select_bitmaps(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_is_select_fd_set(PyObject* self, PyObject* args) {
+static PyObject* syscallreplay_is_select_fd_set(PyObject* self, PyObject* args) {
     // unused
     self = self;
     pid_t child;
     void* fdset_addr;
     int fd;
     if(!PyArg_ParseTuple(args, "iii", &child, &fdset_addr, &fd)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "is_selet_fd_set arg parse failed");
     }
     if(DEBUG) {
@@ -1544,7 +1544,7 @@ static PyObject* tracereplay_is_select_fd_set(PyObject* self, PyObject* args) {
 }
         
 
-static PyObject* tracereplay_enable_debug_output(PyObject* self, PyObject* args) {
+static PyObject* syscallreplay_enable_debug_output(PyObject* self, PyObject* args) {
     //unused
     self = self;
     int numeric_level;
@@ -1558,7 +1558,7 @@ static PyObject* tracereplay_enable_debug_output(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_disable_debug_output(PyObject* self, PyObject* args) {
+static PyObject* syscallreplay_disable_debug_output(PyObject* self, PyObject* args) {
     //unused
     self = self;
     args = args;
@@ -1628,7 +1628,7 @@ void init_constants(PyObject* m) {
     }
 }
 
-static PyObject* tracereplay_peek_register(PyObject* self, PyObject* args) {
+static PyObject* syscallreplay_peek_register(PyObject* self, PyObject* args) {
     // unused
     self = self;
     pid_t child;
@@ -1645,7 +1645,7 @@ static PyObject* tracereplay_peek_register(PyObject* self, PyObject* args) {
     return Py_BuildValue("i", extracted_register);
 }
 
-static PyObject* tracereplay_poke_register(PyObject* self, PyObject* args) {
+static PyObject* syscallreplay_poke_register(PyObject* self, PyObject* args) {
     // unused
     self = self;
     pid_t child;
@@ -1660,7 +1660,7 @@ static PyObject* tracereplay_poke_register(PyObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_cont(PyObject* self, PyObject* args) {
+static PyObject* syscallreplay_cont(PyObject* self, PyObject* args) {
     // unused
     self = self;
     pid_t child;
@@ -1672,7 +1672,7 @@ static PyObject* tracereplay_cont(PyObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_traceme(PyObject* self, PyObject* args) {
+static PyObject* syscallreplay_traceme(PyObject* self, PyObject* args) {
     // unused
     self = self;
     args = args;
@@ -1683,7 +1683,7 @@ static PyObject* tracereplay_traceme(PyObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_wait(PyObject* self, PyObject* args) {
+static PyObject* syscallreplay_wait(PyObject* self, PyObject* args) {
     // unused
     self = self;
     args = args;
@@ -1694,7 +1694,7 @@ static PyObject* tracereplay_wait(PyObject* self, PyObject* args) {
     return Py_BuildValue("i", status);
 }
 
-static PyObject* tracereplay_syscall(PyObject* self, PyObject* args) {
+static PyObject* syscallreplay_syscall(PyObject* self, PyObject* args) {
     // unused
     self = self;
     pid_t child;
@@ -1706,7 +1706,7 @@ static PyObject* tracereplay_syscall(PyObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_poke_address(PyObject* self, PyObject* args) {
+static PyObject* syscallreplay_poke_address(PyObject* self, PyObject* args) {
     // unused
     self = self;
     pid_t child;
@@ -1725,7 +1725,7 @@ static PyObject* tracereplay_poke_address(PyObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_peek_address(PyObject* self, PyObject* args) {
+static PyObject* syscallreplay_peek_address(PyObject* self, PyObject* args) {
     // unused
     self = self;
     pid_t child;
@@ -1736,12 +1736,12 @@ static PyObject* tracereplay_peek_address(PyObject* self, PyObject* args) {
     value = ptrace(PTRACE_PEEKDATA, child, address, NULL);
     if(errno != 0) {
         perror("Peek into userspace failed");
-        PyErr_SetString(TraceReplayError, "peek_address peek failed");
+        PyErr_SetString(SyscallReplayError, "peek_address peek failed");
     }
     return Py_BuildValue("i", value);
 }
 
-static PyObject* tracereplay_write_poll_result(PyObject* self, PyObject* args) {
+static PyObject* syscallreplay_write_poll_result(PyObject* self, PyObject* args) {
     // unused
     self = self;
     pid_t child;
@@ -1750,7 +1750,7 @@ static PyObject* tracereplay_write_poll_result(PyObject* self, PyObject* args) {
     short re;
     struct pollfd s;
     if(!PyArg_ParseTuple(args, "iihh", &child, (int*)&addr, &fd, &re)) {
-        PyErr_SetString(TraceReplayError, "write_poll_result arg parse failed");
+        PyErr_SetString(SyscallReplayError, "write_poll_result arg parse failed");
     }
     copy_child_process_memory_into_buffer(child, addr, (unsigned char*)&s, sizeof(s));
     s.fd = fd;
@@ -1780,7 +1780,7 @@ static PyObject* tracereplay_write_poll_result(PyObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
-static PyObject* tracereplay_write_sendmmsg_lengths(PyObject* self,
+static PyObject* syscallreplay_write_sendmmsg_lengths(PyObject* self,
                                                     PyObject* args) {
     // unused
     self = self;
@@ -1793,7 +1793,7 @@ static PyObject* tracereplay_write_sendmmsg_lengths(PyObject* self,
                          (int*)&addr,
                          &num,
                          &list_of_lengths)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "write_sendmmsg_lengths arg parse failed");
     }
     if(DEBUG) {
@@ -1802,12 +1802,12 @@ static PyObject* tracereplay_write_sendmmsg_lengths(PyObject* self,
         printf("C: sendmmsg_lengths: num: %d\n", num);
     }
     if(!PyList_Check(list_of_lengths)) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "Object received in C code is not a list");
     }
     PyObject* iter;
     if(!(iter = PyObject_GetIter(list_of_lengths))) {
-        PyErr_SetString(TraceReplayError,
+        PyErr_SetString(SyscallReplayError,
                         "Couldn't get iterator for list of lengths");
     }
     PyObject* next = PyIter_Next(iter);
@@ -1823,7 +1823,7 @@ static PyObject* tracereplay_write_sendmmsg_lengths(PyObject* self,
     int msghdr_index = 0;
     while(next) {
         if(!PyInt_Check(next)) {
-            PyErr_SetString(TraceReplayError,
+            PyErr_SetString(SyscallReplayError,
                               "Encountered non-Int in list of lengths");
         }
         length = PyInt_AsSsize_t(next);
@@ -1848,92 +1848,92 @@ static PyObject* tracereplay_write_sendmmsg_lengths(PyObject* self,
     Py_RETURN_NONE;
 }
 
-static PyMethodDef TraceReplayMethods[]  = {
-    {"enable_debug_output", tracereplay_enable_debug_output,
+static PyMethodDef SyscallReplayMethods[]  = {
+    {"enable_debug_output", syscallreplay_enable_debug_output,
      METH_VARARGS, "enable debug messages"},
-    {"disable_debug_output", tracereplay_disable_debug_output,
+    {"disable_debug_output", syscallreplay_disable_debug_output,
      METH_VARARGS, "disable debug messages"},
-    {"cont", tracereplay_cont, METH_VARARGS, "continue process under trace"},
-    {"traceme", tracereplay_traceme, METH_VARARGS, "request tracing"},
-    {"wait", tracereplay_wait, METH_VARARGS, "wait on child process"},
-    {"syscall", tracereplay_syscall, METH_VARARGS, "wait for syscall"},
-    {"peek_address", tracereplay_peek_address, METH_VARARGS, "peek address"},
-    {"poke_address", tracereplay_poke_address, METH_VARARGS, "poke address"},
-    {"peek_register", tracereplay_peek_register,
+    {"cont", syscallreplay_cont, METH_VARARGS, "continue process under trace"},
+    {"traceme", syscallreplay_traceme, METH_VARARGS, "request tracing"},
+    {"wait", syscallreplay_wait, METH_VARARGS, "wait on child process"},
+    {"syscall", syscallreplay_syscall, METH_VARARGS, "wait for syscall"},
+    {"peek_address", syscallreplay_peek_address, METH_VARARGS, "peek address"},
+    {"poke_address", syscallreplay_poke_address, METH_VARARGS, "poke address"},
+    {"peek_register", syscallreplay_peek_register,
       METH_VARARGS, "peek register value"},
-    {"poke_register", tracereplay_poke_register,
+    {"poke_register", syscallreplay_poke_register,
      METH_VARARGS, "poke register value"},
-    {"write_poll_result", tracereplay_write_poll_result,
+    {"write_poll_result", syscallreplay_write_poll_result,
      METH_VARARGS, "write poll result"},
-    {"populate_select_bitmaps", tracereplay_populate_select_bitmaps,
+    {"populate_select_bitmaps", syscallreplay_populate_select_bitmaps,
      METH_VARARGS, "populate select bitmaps"},
-    {"populate_rt_sigaction_struct", tracereplay_populate_rt_sigaction_struct,
+    {"populate_rt_sigaction_struct", syscallreplay_populate_rt_sigaction_struct,
      METH_VARARGS, "populate rt_sigaction struct"},
-    {"populate_stat64_struct", tracereplay_populate_stat64_struct,
+    {"populate_stat64_struct", syscallreplay_populate_stat64_struct,
      METH_VARARGS, "populate stat64 struct"},
-    {"populate_llseek_result", tracereplay_populate_llseek_result,
+    {"populate_llseek_result", syscallreplay_populate_llseek_result,
      METH_VARARGS, "populate llseek result"},
-    {"populate_char_buffer", tracereplay_populate_char_buffer,
+    {"populate_char_buffer", syscallreplay_populate_char_buffer,
      METH_VARARGS, "populate char buffer"},
-    {"populate_int", tracereplay_populate_int,
+    {"populate_int", syscallreplay_populate_int,
      METH_VARARGS, "populate int"},
-    {"populate_unsigned_int", tracereplay_populate_unsigned_int,
+    {"populate_unsigned_int", syscallreplay_populate_unsigned_int,
      METH_VARARGS, "populate unsigned int"},
-    {"populate_uname_structure", tracereplay_populate_uname_structure,
+    {"populate_uname_structure", syscallreplay_populate_uname_structure,
      METH_VARARGS, "populate uname structure"},
-    {"populate_rlimit_structure", tracereplay_populate_rlimit_structure,
+    {"populate_rlimit_structure", syscallreplay_populate_rlimit_structure,
      METH_VARARGS, "populate rlimit structure"},
-    {"populate_tcgets_response", tracereplay_populate_tcgets_response,
+    {"populate_tcgets_response", syscallreplay_populate_tcgets_response,
      METH_VARARGS, "populate tcgets response"},
     {"populate_statfs64_structure",   tracreplay_populate_statfs64_structure,
      METH_VARARGS, "populate statfs64 structure"},
-    {"populate_af_inet_sockaddr", tracereplay_populate_af_inet_sockaddr,
+    {"populate_af_inet_sockaddr", syscallreplay_populate_af_inet_sockaddr,
      METH_VARARGS, "populate AF_INET sockaddr"},
-    {"write_sendmmsg_lengths", tracereplay_write_sendmmsg_lengths,
+    {"write_sendmmsg_lengths", syscallreplay_write_sendmmsg_lengths,
      METH_VARARGS, "populate sendmmsg lengths"},
-    {"copy_bytes_into_child_process", tracereplay_copy_bytes_into_child_process,
+    {"copy_bytes_into_child_process", syscallreplay_copy_bytes_into_child_process,
      METH_VARARGS, "copy bytes into child process"},
-    {"populate_timespec_structure", tracereplay_populate_timespec_structure,
+    {"populate_timespec_structure", syscallreplay_populate_timespec_structure,
      METH_VARARGS, "populate timespec structure"},
-    {"populate_timer_t_structure", tracereplay_populate_timer_t_structure,
+    {"populate_timer_t_structure", syscallreplay_populate_timer_t_structure,
      METH_VARARGS, "populate timer_t structure"},
-    {"populate_itimerspec_structure", tracereplay_populate_itimerspec_structure,
+    {"populate_itimerspec_structure", syscallreplay_populate_itimerspec_structure,
      METH_VARARGS, "populate itimerspec structure"},    
-    {"populate_timeval_structure", tracereplay_populate_timeval_structure,
+    {"populate_timeval_structure", syscallreplay_populate_timeval_structure,
      METH_VARARGS, "populate timeval structure"},
-    {"populate_winsize_structure", tracereplay_populate_winsize_structure,
+    {"populate_winsize_structure", syscallreplay_populate_winsize_structure,
      METH_VARARGS, "populate winsize structure"},
-    {"is_select_fd_set", tracereplay_is_select_fd_set,
+    {"is_select_fd_set", syscallreplay_is_select_fd_set,
      METH_VARARGS, "is select fd set"},
-    {"copy_address_range", tracereplay_copy_address_range,
+    {"copy_address_range", syscallreplay_copy_address_range,
      METH_VARARGS, "copy address range"},
-    {"populate_pipefd_array", tracereplay_populate_pipefd_array,
+    {"populate_pipefd_array", syscallreplay_populate_pipefd_array,
      METH_VARARGS, "populate pipefd array"},
-    {"get_select_fds", tracereplay_get_select_fds,
+    {"get_select_fds", syscallreplay_get_select_fds,
      METH_VARARGS, "get select fds"},
-    {"populate_getdents64_structure", tracereplay_populate_getdents64_structure,
+    {"populate_getdents64_structure", syscallreplay_populate_getdents64_structure,
      METH_VARARGS, "populate getdents64 structure"},
-    {"populate_getdents_structure", tracereplay_populate_getdents_structure,
+    {"populate_getdents_structure", syscallreplay_populate_getdents_structure,
      METH_VARARGS, "populate getdents structure"},
-    {"populate_cpu_set", tracereplay_populate_cpu_set,
+    {"populate_cpu_set", syscallreplay_populate_cpu_set,
      METH_VARARGS, "populate cpu_set"},
-    {"populate_stack_structure", tracereplay_populate_stack_structure,
+    {"populate_stack_structure", syscallreplay_populate_stack_structure,
      METH_VARARGS, "populate_stack_structure"},
-    {"populate_readv_vectors", tracereplay_populate_readv_vectors,
+    {"populate_readv_vectors", syscallreplay_populate_readv_vectors,
     METH_VARARGS, "populate_readv_vectors"},
     {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC initcinterface(void) {
+PyMODINIT_FUNC initsyscallreplay(void) {
     PyObject* m;
-    if((m = Py_InitModule("tracereplay.cinterface", TraceReplayMethods)) == NULL) {
+    if((m = Py_InitModule("syscallreplay", SyscallReplayMethods)) == NULL) {
         return;
     }
-    TraceReplayError = PyErr_NewException("cinterface.TraceReplayError",
+    SyscallReplayError = PyErr_NewException("syscallreplay.error",
                                           NULL,
                                           NULL
                                          );
-    Py_INCREF(TraceReplayError);
-    PyModule_AddObject(m, "error", TraceReplayError);
+    Py_INCREF(SyscallReplayError);
+    PyModule_AddObject(m, "error", SyscallReplayError);
     init_constants(m);
 }

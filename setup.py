@@ -1,9 +1,9 @@
 from distutils.core import setup, Extension
 
 
-setup(name='tracereplay',
+setup(name='syscallreplay',
       version='0.1',
       description='Replay a system call trace through an application',
-      packages=['tracereplay', 'tracereplay.checker'],
-      ext_modules=[Extension('tracereplay.cinterface',
+      packages=['syscallreplay'],
+      ext_modules=[Extension('syscallreplay',
                              ['tracereplay.c'])])
