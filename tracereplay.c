@@ -1706,6 +1706,55 @@ static PyObject* syscallreplay_syscall(PyObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
+static PyObject* syscallreplay_attach(PyObject* self, PyObject* args) {
+  // unused
+  self = self;
+  pid_t child;
+  int status;
+  if(!PyArg_ParseTuple(args, "I", &child)) {
+    PyErr_SetString(SyscallReplayError, "attach parsetuple failed");
+  }
+  errno = 0;
+  if(ptrace(PTRACE_ATTACH, child, NULL, NULL) == -1) {
+    perror("Attach failed");
+    PyErr_SetString(SyscallReplayError, "Attach failed");
+  }
+  if(waitpid(child, &status, 0) == -1) {
+    perror("Wait failed!");
+    PyErr_SetString(SyscallReplayError, "Wait after attach failed");
+  }
+  return Py_BuildValue("i", status);
+}
+
+static PyObject* syscallreplay_sigcont(PyObject* self, PyObject* args) {
+  // unused;
+  self = self;
+  pid_t child;
+  if(!PyArg_ParseTuple(args, "I", &child)) {
+    PyErr_SetString(SyscallReplayError, "sigcont parsetuple failed");
+  }
+  if(kill(child, SIGCONT) == -1) {
+    perror("SIGCONT failed");
+    PyErr_SetString(SyscallReplayError, "SIGCONT Failed");
+  }
+  Py_RETURN_NONE;
+}
+
+static PyObject* syscallreplay_waitpid(PyObject* self, PyObject* args) {
+  //unused
+  self = self;
+  pid_t child;
+  int status;
+  if(!PyArg_ParseTuple(args, "I", &child)) {
+    PyErr_SetString(SyscallReplayError, "Waitpid parsetuple failed");
+  }
+  if(waitpid(child, &status, 0) == -1) {
+    perror("Waitpid failed!");
+    PyErr_SetString(SyscallReplayError, "Waitpid failed");
+  }
+  return Py_BuildValue("i", status);
+}
+
 static PyObject* syscallreplay_poke_address(PyObject* self, PyObject* args) {
     // unused
     self = self;
@@ -1857,6 +1906,9 @@ static PyMethodDef SyscallReplayMethods[]  = {
     {"traceme", syscallreplay_traceme, METH_VARARGS, "request tracing"},
     {"wait", syscallreplay_wait, METH_VARARGS, "wait on child process"},
     {"syscall", syscallreplay_syscall, METH_VARARGS, "wait for syscall"},
+    {"attach", syscallreplay_attach, METH_VARARGS, "attach to pid"},
+    {"sigcont", syscallreplay_sigcont, METH_VARARGS, "send SIGCONT to pid"},
+    {"waitpid", syscallreplay_waitpid, METH_VARARGS, "wait on a pid"},
     {"peek_address", syscallreplay_peek_address, METH_VARARGS, "peek address"},
     {"poke_address", syscallreplay_poke_address, METH_VARARGS, "poke address"},
     {"peek_register", syscallreplay_peek_register,
