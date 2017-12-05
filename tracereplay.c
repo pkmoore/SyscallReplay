@@ -1700,8 +1700,8 @@ static PyObject* syscallreplay_syscall(PyObject* self, PyObject* args) {
     pid_t child;
     PyArg_ParseTuple(args, "i", &child);
     errno = 0;
-    if(ptrace(PTRACE_SYSCALL, child, NULL, NULL) == -1) {
-        perror("Cont failed");
+    if(ptrace(PTRACE_SYSCALL, child, SIGCONT, NULL) == -1) {
+        perror("syscallreplay_syscall failed");
     }
     Py_RETURN_NONE;
 }
