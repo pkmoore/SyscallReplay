@@ -481,6 +481,10 @@ def _collect_readv_iovs(syscall_object):
 # are tracking. Otherwise it simply does any required debug-printing and lets
 # it execute
 def write_entry_handler(syscall_id, syscall_object, pid):
+    logging.debug('Write entry handler')
+    write_entry_debug_printer(pid, syscall_id, syscall_object)
+    return
+
     validate_integer_argument(pid, syscall_object, 0, 0)
     validate_integer_argument(pid, syscall_object, 2, 2)
     bytes_addr = cint.peek_register(pid, cint.ECX)
@@ -510,6 +514,9 @@ def write_entry_handler(syscall_id, syscall_object, pid):
 # Once again, this only has to be here until the new "open" machinery
 # is in place
 def write_exit_handler(syscall_id, syscall_object, pid):
+    write_exit_debug_printer(pid, syscall_id, syscall_object)
+    return
+
     logging.debug('Entering write exit handler')
     ret_val = cint.peek_register(pid, cint.EAX)
     ret_val_from_trace = int(syscall_object.ret[0])
