@@ -514,7 +514,7 @@ def write_entry_handler(syscall_id, syscall_object, pid):
 # Once again, this only has to be here until the new "open" machinery
 # is in place
 def write_exit_handler(syscall_id, syscall_object, pid):
-    write_exit_debug_printer(pid, syscall_id, syscall_object)
+    logging.debug('Write exit')
     return
 
     logging.debug('Entering write exit handler')
