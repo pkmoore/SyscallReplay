@@ -72,7 +72,7 @@ def noop_current_syscall(pid):
     # flip-flop flag to reflect this.  This allows later code (in main.py) to
     # set it BACK to entering before we begin processing the entry for the next
     # system call.
-    tracereplay.entering_syscall = False
+    cint.entering_syscall = False
 
 
 def next_syscall():
