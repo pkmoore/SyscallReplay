@@ -506,6 +506,9 @@ def write_entry_handler(syscall_id, syscall_object, pid):
         raise ReplayDeltaError('Bytes from trace don\'t match bytes from '
                                'execution!')
     fd = int(syscall_object.args[0].value)
+    if fd not in cint.injected_state['open_fds']:
+        raise ReplayDeltaError('Attempted to write to non-open file '
+                               'descriptor: {}'.format(fd))
     if fd == 1 or fd == 2:
         print('####   Output   ####')
         print(bytes_from_trace, end='')
