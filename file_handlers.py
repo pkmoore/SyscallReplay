@@ -517,10 +517,8 @@ def write_entry_handler(syscall_id, syscall_object, pid):
 # Once again, this only has to be here until the new "open" machinery
 # is in place
 def write_exit_handler(syscall_id, syscall_object, pid):
-    write_entry_debug_printer(pid, 666, syscall_object)
-    logging.debug('Write exit')
-    return
-
+    raise ReplayDeltaError('Got write exit.  This shouldn\'t happen '
+                           'because all write() calls are fake.')
     logging.debug('Entering write exit handler')
     ret_val = cint.peek_register(pid, cint.EAX)
     ret_val_from_trace = int(syscall_object.ret[0])
