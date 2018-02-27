@@ -477,14 +477,20 @@ def _collect_readv_iovs(syscall_object):
     return tmp
 
 
-# Note: This handler only takes action on syscalls made to file descriptors we
-# are tracking. Otherwise it simply does any required debug-printing and lets
-# it execute
 def write_entry_handler(syscall_id, syscall_object, pid):
-    logging.debug('Write entry handler')
-    write_entry_debug_printer(pid, syscall_id, syscall_object)
-    return
+    """Replay Always
+    Checks:
+    0: int file descriptor: The file descriptor being written to
+    2: size_t length: Length of bytes to write
+    Sets:
+    return value: new file descriptor or -1 (error)
+        (added as replay file descriptor)
+    errno
 
+    Not Implemented:
+    * Determine what is not implemented
+    """
+    logging.debug('Write entry handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
     validate_integer_argument(pid, syscall_object, 2, 2)
     bytes_addr = cint.peek_register(pid, cint.ECX)
@@ -500,20 +506,18 @@ def write_entry_handler(syscall_id, syscall_object, pid):
         raise ReplayDeltaError('Bytes from trace don\'t match bytes from '
                                'execution!')
     fd = int(syscall_object.args[0].value)
-    if should_replay_based_on_fd(fd):
-        # Print the bytes if writing to stdout or stderr so output is visible
-        if fd == 1 or fd == 2:
-            print(bytes_from_trace)
-        noop_current_syscall(pid)
-        apply_return_conditions(pid, syscall_object)
-    else:
-        logging.debug('Ignoring write to un-replayed file descriptor')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object)
+    if fd == 1 or fd == 2:
+        print('####   Output   ####')
+        print(bytes_from_trace, end='')
+        print('#### End Output ####')
+    noop_current_syscall(pid)
+    apply_return_conditions(pid, syscall_object)
 
 
 # Once again, this only has to be here until the new "open" machinery
 # is in place
 def write_exit_handler(syscall_id, syscall_object, pid):
+    write_entry_debug_printer(pid, 666, syscall_object)
     logging.debug('Write exit')
     return
 
