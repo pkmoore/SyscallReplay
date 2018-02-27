@@ -483,7 +483,7 @@ def write_entry_handler(syscall_id, syscall_object, pid):
     0: int file descriptor: The file descriptor being written to
     2: size_t length: Length of bytes to write
     Sets:
-    return value: new file descriptor or -1 (error)
+    return value: number of bytes written or -1 (error)
         (added as replay file descriptor)
     errno
 
