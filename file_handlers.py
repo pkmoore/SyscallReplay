@@ -394,46 +394,53 @@ def close_exit_handler(syscall_id, syscall_object, pid):
 
 
 def read_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: int file descriptor: The file descriptor being read from
+    2: size_t length: Length of bytes to read
+    Sets:
+    return value: number of bytes read or -1 (error)
+    errno
+
+    Not Implemented:
+    * Determine what is not implemented
+    """
+
+    validate_integer_argument(pid, syscall_object, 0, 0)
+    validate_integer_argument(pid, syscall_object, 2, 2)
     fd = cint.peek_register(pid, cint.EBX)
     fd_from_trace = syscall_object.args[0].value
+    if fd not in cint.injected_state['open_fds']:
+        raise ReplayDeltaError('Attempted to read from non-open file '
+                               'descriptor: {}'.format(fd))
     logging.debug('File descriptor from execution: %s', fd)
     logging.debug('File descriptor from trace: %s', fd_from_trace)
-    if should_replay_based_on_fd(fd_from_trace):
-        ret_val = cleanup_return_value(syscall_object.ret[0])
-        noop_current_syscall(pid)
-        if ret_val != -1:
-            # file descriptor
-            validate_integer_argument(pid, syscall_object, 0, 0)
-            # bytes to read
-            validate_integer_argument(pid, syscall_object, 2, 2)
-            buffer_address = cint.peek_register(pid, cint.ECX)
-            buffer_size_from_execution = cint.peek_register(pid,
-                                                            cint.EDX)
-            buffer_size_from_trace = int(syscall_object.args[2].value)
-            logging.debug('Address: %x', buffer_address & 0xffffffff)
-            logging.debug('Buffer size from execution: %d',
-                          buffer_size_from_execution)
-            logging.debug('Buffer size from trace: %d', buffer_size_from_trace)
-            data = syscall_object.args[1].value
-            data = cleanup_quotes(data)
-            data = data.decode('string_escape')
-            if len(data) != ret_val:
-                raise ReplayDeltaError('Decoded bytes length ({}) does not '
-                                       'equal return value from trace ({})'
-                                       .format(len(data), ret_val))
-            cint.populate_char_buffer(pid,
-                                      buffer_address,
-                                      data)
-            buf = cint.copy_address_range(pid,
-                                          buffer_address,
-                                          buffer_address + ret_val)
-            if buf != data:
-                raise ReplayDeltaError('Data copied by read() handler doesn\'t'
-                                       ' match after copy')
-        apply_return_conditions(pid, syscall_object)
-    else:
-        logging.debug("Ignoring read call to untracked file descriptor")
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object)
+    ret_val = cleanup_return_value(syscall_object.ret[0])
+    noop_current_syscall(pid)
+    if ret_val != -1:
+        # file descriptor
+        validate_integer_argument(pid, syscall_object, 0, 0)
+        # bytes to read
+        validate_integer_argument(pid, syscall_object, 2, 2)
+        buffer_address = cint.peek_register(pid, cint.ECX)
+        buffer_size_from_execution = cint.peek_register(pid,
+                                                        cint.EDX)
+        buffer_size_from_trace = int(syscall_object.args[2].value)
+        logging.debug('Address: %x', buffer_address & 0xffffffff)
+        logging.debug('Buffer size from execution: %d',
+                        buffer_size_from_execution)
+        logging.debug('Buffer size from trace: %d', buffer_size_from_trace)
+        data = syscall_object.args[1].value
+        data = cleanup_quotes(data)
+        data = data.decode('string_escape')
+        if len(data) != ret_val:
+            raise ReplayDeltaError('Decoded bytes length ({}) does not '
+                                    'equal return value from trace ({})'
+                                    .format(len(data), ret_val))
+        cint.populate_char_buffer(pid,
+                                  buffer_address,
+                                  data)
+    apply_return_conditions(pid, syscall_object)
 
 
 def readv_entry_handler(syscall_id, syscall_object, pid):
