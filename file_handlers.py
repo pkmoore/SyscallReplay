@@ -33,7 +33,8 @@ from util import (cleanup_quotes,
                   add_os_fd_mapping,
                   remove_replay_fd,
                   remove_os_fd_mapping,
-                  offset_file_descriptor,)
+                  offset_file_descriptor,
+                  string_time_to_int,)
 
 
 def eventfd2_entry_handler(syscall_id, syscall_object, pid):
@@ -815,10 +816,19 @@ def openat_exit_handler(syscall_id, syscall_object, pid):
 
 
 def fstat64_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: int file descriptor: The file descriptor being examined
+    Sets:
+    return value: 0 (success) or -1 (error)
+    errno
+
+    Not Implemented:
+    * Microseconds in st_*time are truncated and populated as 0
+    """
+
     logging.debug('Entering fstat64 handler')
-    if not should_replay_based_on_fd(int(syscall_object.args[0].value)):
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object)
-        return
+    validate_integer_argument(pid, syscall_object, 0, 0)
     buf_addr = cint.peek_register(pid, cint.ECX)
     logging.debug('ECX: %x', (buf_addr & 0xffffffff))
     if syscall_object.ret[0] == -1:
@@ -912,45 +922,25 @@ def fstat64_entry_handler(syscall_id, syscall_object, pid):
             st_size = 0
             logging.debug('optional st_size not present')
         # st_atime
-        r = find_arg_matching_string(syscall_object.args[1:],
-                                     'st_atime')
+        r = find_arg_matching_string(syscall_object.args[1:], 'st_atime')
         idx, arg = r[0]
         value = arg.split('=')[1]
-        if value == '0':
-            logging.debug('Got zero st_atime')
-            st_atime = 0
-        else:
-            logging.debug('Got normal st_atime')
-            st_atime = int(mktime(strptime(value, '%Y/%m/%d-%H:%M:%S')))
+        st_atime = string_time_to_int(value)
         logging.debug('st_atime: %d', st_atime)
 
         # st_mtime
-        r = find_arg_matching_string(syscall_object.args[1:],
-                                     'st_mtime')
+        r = find_arg_matching_string(syscall_object.args[1:], 'st_mtime')
         idx, arg = r[0]
-        value = arg.split('=')[1]
-        if value == '0':
-            logging.debug('Got zero st_mtime')
-            st_mtime = 0
-        else:
-            logging.debug('Got normal st_mtime')
-            st_mtime = int(mktime(strptime(value, '%Y/%m/%d-%H:%M:%S')))
+        st_mtime = string_time_to_int(value)
         logging.debug('st_mtime: %d', st_mtime)
 
         # st_ctime
-        r = find_arg_matching_string(syscall_object.args[1:],
-                                     'st_ctime')
+        r = find_arg_matching_string(syscall_object.args[1:], 'st_ctime')
         idx, arg = r[0]
         value = arg.split('=')[1].strip('}')
-        if value == '0':
-            logging.debug('Got zero st_ctime')
-            st_ctime = 0
-        else:
-            logging.debug('Got normal st_ctime')
-            st_ctime = int(mktime(strptime(value, '%Y/%m/%d-%H:%M:%S')))
+        st_ctime = string_time_to_int(value)
         logging.debug('st_ctime: %d', st_ctime)
 
-        logging.debug('Injecting values into structure')
         logging.debug('pid: %d', pid)
         logging.debug('addr: %d', buf_addr)
         cint.populate_stat64_struct(pid,

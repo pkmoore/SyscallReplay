@@ -16,6 +16,24 @@ from syscall_dict import SOCKET_SUBCALLS
 from syscall_dict import SYSCALLS
 
 
+def string_time_to_int(strtime):
+    """Convert string time in strace format to an int
+    return value: time from the epoch in seconds as an int
+
+    Not Implemented:
+    Microseconds are lost
+    """
+
+    if strtime == '0':
+        logging.debug('Got zero st_atime')
+        return 0
+    else:
+        logging.debug('Got normal st_atime')
+        strtime = strtime[:strtime.find('.')]
+        return int(time.mktime(time.strptime(strtime,
+                                             '%Y/%m/%d-%H:%M:%S')))
+
+
 def advance_trace():
     '''Move the global index that tracks our place in the list of system call
     objects forward one system call object and return the object it now points
