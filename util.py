@@ -439,7 +439,8 @@ def validate_address_argument(pid,
                               syscall_object,
                               trace_arg,
                               exec_arg,
-                              params=None):
+                              params=None,
+                              except_on_mismatch=True):
     logging.debug('Validating address argument (trace position: %d '
                   'execution position: %d)',
                   trace_arg,
@@ -450,15 +451,46 @@ def validate_address_argument(pid,
         arg = params[exec_arg]
     # Convert signed interpretation from peek register to unsigned
     arg = arg & 0xffffffff
-    arg_from_trace = int(syscall_object.args[trace_arg].value, 16)
+    if syscall_object.args[trace_arg].value == 'NULL':
+        arg_from_trace = 0
+    else:
+        arg_from_trace = int(syscall_object.args[trace_arg].value, 16)
     if arg_from_trace != arg:
-        raise ReplayDeltaError('Argument value at trace position: {}, '
-                               'execution position: {} from execution  ({}) '
-                               'differs argument value from trace ({})'
-                               .format(trace_arg,
-                                       exec_arg,
-                                       arg,
-                                       arg_from_trace))
+        message = 'Argument value at trace position: {}, ' \
+                  'execution position: {} from execution  ({}) ' \
+                  'differs argument value from trace ({})' \
+                  .format(trace_arg, exec_arg, arg, arg_from_trace)
+        _except_or_warn(message, except_on_mismatch)
+
+
+def validate_return_value(pid, syscall_object, except_on_mismatch=True):
+    ret_from_execution = cint.peek_register(pid, cint.EAX)
+    ret_from_trace = cleanup_return_value(syscall_object.ret[0])
+    if syscall_object.ret[1] is not None:
+        logging.debug('We have an errno code')
+        logging.debug('Errno code: %s', syscall_object.ret[1])
+        errno_retval = -1 * ERRNO_CODES[syscall_object.ret[1]]
+        logging.debug('Errno ret_val: %d', errno_retval)
+        if errno_retval == ret_from_execution:
+            return
+    if ret_from_execution < 0:
+        ret_from_execution &= 0xffffffff
+    if ret_from_execution != ret_from_trace:
+        message = 'Return value from execution ({}, {:02x}) differs ' \
+                  'from return value from trace ({}, {:02x})' \
+                  .format(ret_from_execution,
+                          ret_from_execution,
+                          ret_from_trace,
+                          ret_from_trace)
+    _except_or_warn(message, except_on_mismatch)
+
+
+def _except_or_warn(message, except_on_mismatch):
+    if except_on_mismatch:
+        raise ReplayDeltaError(message)
+    else:
+        logging.warn(message)
+            
 
 
 def _pos_to_reg(pos):
