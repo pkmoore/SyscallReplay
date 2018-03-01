@@ -1,3 +1,4 @@
+import sys
 import logging
 
 from os_dict import IOCTLS_INT_TO_IOCTL
@@ -15,7 +16,41 @@ from util import (ReplayDeltaError,
                   apply_return_conditions,
                   should_replay_based_on_fd,
                   cleanup_return_value,
-                  validate_integer_argument,)
+                  validate_integer_argument,
+                  validate_address_argument,
+                  validate_return_value,)
+
+def brk_entry_handler(syscall_id, syscall_object, pid):
+    """Never Replay. Only check the integer argument
+    Checks:
+    0: void* addr: The address to which the program break should be set
+    Sets:
+    Nothing
+
+    """
+
+    logging.debug('brk entry handler')
+    validate_address_argument(pid,
+                              syscall_object,
+                              0,
+                              0,
+                              except_on_mismatch=False)
+
+
+def brk_exit_handler(syscall_id, syscall_object, pid):
+    """Never Replay.  Only check the return value and WARN if it is
+    different.  BASED ON THE ASSUMPTION THAT THE PROGRAM BREAK NOT MATCHING UP
+    IS FINE TO IGNORE.
+    Checks:
+    return value: 0 (success) or -1 (failure)
+    errno
+    Sets:
+    Nothing
+
+    """
+
+    logging.debug('brk exit handler')
+    validate_return_value(pid, syscall_object, except_on_mismatch=False)
 
 
 def rt_sigaction_entry_handler(syscall_id, syscall_object, pid):
