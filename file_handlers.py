@@ -499,7 +499,7 @@ def write_entry_handler(syscall_id, syscall_object, pid):
     Not Implemented:
     * Determine what is not implemented
     """
-    logging.debug('Write entry handler')
+    logging.debug('write entry handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
     validate_integer_argument(pid, syscall_object, 2, 2)
     bytes_addr = cint.peek_register(pid, cint.ECX)
