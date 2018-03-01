@@ -8,15 +8,14 @@ from os_dict import SIGNAL_SIG_TO_INT
 from os_dict import SIGNAL_DFLT_HANDLER_TO_INT
 from os_dict import SIGNAL_FLAG_TO_HEX
 
-# from util import *
-from util import(validate_integer_argument,
-                 should_replay_based_on_fd,
-                 noop_current_syscall,
-                 apply_return_conditions,
-                 cint,
-                 swap_trace_fd_to_execution_fd,
-                 cleanup_return_value,
-                 ReplayDeltaError,)
+from util import (ReplayDeltaError,
+                  logging,
+                  cint,
+                  noop_current_syscall,
+                  apply_return_conditions,
+                  should_replay_based_on_fd,
+                  cleanup_return_value,
+                  validate_integer_argument,)
 
 
 def rt_sigaction_entry_handler(syscall_id, syscall_object, pid):
