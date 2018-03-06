@@ -236,17 +236,26 @@ def getsockopt_entry_handler(syscall_id, syscall_object, pid):
 
 
 def connect_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: The socket file descriptor
+    2: The length of the sockaddr structure pointed to by 1
+    Sets:
+    return value: file descriptor of the new socket -1 (error)
+    errno
+
+    Not Implemented:
+    * Determine what is not implemented
+    """
+
     logging.debug('Entering connect entry handler')
     ecx = cint.peek_register(pid, cint.ECX)
     params = extract_socketcall_parameters(pid, ecx, 3)
     validate_integer_argument(pid, syscall_object, 0, 0, params=params)
     validate_integer_argument(pid, syscall_object, 2, 2, params=params)
     trace_fd = int(syscall_object.args[0].value)
-    if should_replay_based_on_fd(trace_fd):
-        noop_current_syscall(pid)
-        apply_return_conditions(pid, syscall_object)
-    else:
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object, params_addr=params)
+    noop_current_syscall(pid)
+    apply_return_conditions(pid, syscall_object)
 
 
 def connect_exit_handler(syscall_id, syscall_object, pid):
