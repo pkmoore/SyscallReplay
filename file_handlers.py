@@ -357,22 +357,24 @@ def dup_exit_handler(syscall_id, syscall_object, pid):
 
 
 def close_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: int file descriptor: The file descriptor being closed
+    Sets:
+    return value: 0 (success) or -1 (error)
+    errno
+
+    Not Implemented:
+    * Determine what is not implemented
+    """
     logging.debug('Entering close entry handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
     fd_from_trace = int(syscall_object.args[0].value)
     # We always replay unsuccessful close calls
-    if int(syscall_object.ret[0]) == -1 \
-       or should_replay_based_on_fd(fd_from_trace):
-        noop_current_syscall(pid)
-        if syscall_object.ret[0] != -1:
-            logging.debug('Got successful close call')
-            remove_replay_fd(fd_from_trace)
-        else:
-            logging.debug('Replaying unsuccessful close call')
-        apply_return_conditions(pid, syscall_object)
-    else:
-        logging.info('Not replaying this system call')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object)
+    if syscall_object.ret[0] == -1:
+        cint.injected_state['open_fds'].remove(fd_from_trace)
+    noop_current_syscall(pid)
+    apply_return_conditions(pid, syscall_object)
 
 
 def close_exit_handler(syscall_id, syscall_object, pid):
