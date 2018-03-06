@@ -1,7 +1,8 @@
 # pylint: disable=W0613, C0302
-# unused arguments, too many ines
+# unused arguments, too many lines
 
-"""File manipulation handlers
+"""
+Handlers for socket subcalls
 """
 
 
@@ -493,12 +494,12 @@ def write_entry_handler(syscall_id, syscall_object, pid):
     2: size_t length: Length of bytes to write
     Sets:
     return value: number of bytes written or -1 (error)
-        (added as replay file descriptor)
     errno
 
     Not Implemented:
     * Determine what is not implemented
     """
+
     logging.debug('write entry handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
     validate_integer_argument(pid, syscall_object, 2, 2)
