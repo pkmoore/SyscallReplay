@@ -3,7 +3,8 @@ from os_dict import PROTOFAM_INT_TO_FAM
 from os_dict import SHUTDOWN_INT_TO_CMD
 from os_dict import SOCKTYPE_INT_TO_TYPE
 
-from util import (ReplayDeltaError,
+from util import (extract_socketcall_parameters,
+                  ReplayDeltaError,
                   logging,
                   cint,
                   noop_current_syscall,
