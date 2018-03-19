@@ -1711,25 +1711,32 @@ def _cleanup_f_type(t):
 
 
 def fcntl64_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: int file descriptor: The file descriptor being interacted with
+    Sets:
+    return value: number of bytes written or -1 (error)
+    errno
+
+    Not Implemented:
+    * Many commands that haven't been encountered yet
+    """
+
     logging.debug('Entering fcntl64 entry handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
     trace_fd = int(syscall_object.args[0].value)
-    if should_replay_based_on_fd(trace_fd):
-        operation = syscall_object.args[1].value[0].strip('[]\'')
-        noop_current_syscall(pid)
-        if (operation == 'F_GETFL' or operation == 'F_SETFL'
-            or operation == 'F_SETFD' or operation == 'F_SETLKW'):
-            apply_return_conditions(pid, syscall_object)
-        elif (operation == 'F_GETFD'):
-            _fcntl_f_getfd_handler(pid, syscall_object)
-        elif operation == 'F_DUPFD':
-            _fcntl_f_dupfd_handler(pid, syscall_object)
-        else:
-            raise NotImplementedError('Unimplemented fcntl64 operation {}'
-                                      .format(operation))
+    operation = syscall_object.args[1].value[0].strip('[]\'')
+    noop_current_syscall(pid)
+    if (operation == 'F_GETFL' or operation == 'F_SETFL'
+        or operation == 'F_SETFD' or operation == 'F_SETLKW'):
+        apply_return_conditions(pid, syscall_object)
+    elif (operation == 'F_GETFD'):
+        _fcntl_f_getfd_handler(pid, syscall_object)
+    elif operation == 'F_DUPFD':
+        _fcntl_f_dupfd_handler(pid, syscall_object)
     else:
-        logging.debug('Not replaying this system call')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object)
+        raise NotImplementedError('Unimplemented fcntl64 operation {}'
+                                  .format(operation))
 
 
 def _fcntl_f_dupfd_handler(pid, syscall_object):
