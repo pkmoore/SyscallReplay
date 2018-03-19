@@ -727,8 +727,21 @@ def statfs64_entry_handler(syscall_id, syscall_object, pid):
 
 
 def open_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: The string filename
+    Sets:
+    return value: The file descriptor -1 (error)
+    errno
+
+    Not Implemented:
+    * Implement a function to check null terminated strings to clean up this
+      mess of checking
+    """
+
     logging.debug('Entering open entry handler')
     ebx = cint.peek_register(pid, cint.EBX)
+    data = peek_string(pid, ebx)
     fn_from_execution = peek_string(pid, ebx)
     fn_from_trace = syscall_object.args[0].value.strip('"')
     logging.debug('Filename from trace: %s', fn_from_trace)
@@ -738,19 +751,58 @@ def open_entry_handler(syscall_id, syscall_object, pid):
                         'file name from trace ({})'.format(fn_from_execution,
                                                            fn_from_trace))
     fd_from_trace = int(syscall_object.ret[0])
-    if fd_from_trace == -1 or not is_file_mmapd_at_any_time(fn_from_trace):
-        if fd_from_trace == -1:
-            logging.debug('This is an unsuccessful open call. We will replay '
-                          'it')
-        else:
-            logging.debug('File descriptor is not mmap\'d before it is closed '
-                          'so we will replay it')
-            add_replay_fd(fd_from_trace)
-        noop_current_syscall(pid)
-        apply_return_conditions(pid, syscall_object)
-    else:
-        logging.debug('Resultant file descriptor is mmap\'d before close. '
-                      'Will not replay')
+    if fd_from_trace != -1:
+        cint.injected_state['open_fds'].append(fd_from_trace)
+    noop_current_syscall(pid)
+    apply_return_conditions(pid, syscall_object)
+
+
+def validate_string_argument(pid,
+                             syscall_object,
+                             trace_buf_arg,
+                             trace_len_arg,
+                             exec_buf_arg,
+                             exec_len_arg):
+    logging.debug('Validating string argument (trace position: {}, '\
+                  'execution position: {}'
+                  .format(trace_arg, exec_arg))
+
+    validate_integer_argument(pid, syscall_object, 0, 0)
+    POS_TO_REG = {0: cint.EBX,
+                  1: cint.ECX,
+                  2: cint.EDX,
+                  3: cint.ESI,
+                  4: cint.EDI}
+
+    trace_len = int(syscall_object[trace_len_arg])
+    trace_data = cleanup_quotes(syscall_object[trace_buf_arg].value).decode('string-escape')
+
+    exec_len = cint.peek_register(pid, POS_TO_REG[exec_len_arg])
+    exec_data = cint.copy_address_range(pid,
+                                        cint.peek_register(pid, POS_TO_REG[exec_buf_arg]),
+                                        exec_len)
+
+    logging.debug('Length from trace: {}\n'
+                  'Length from trace: {}\n'
+                  'Data from trace: {}\n'
+                  'Data from execution: {}\n'
+                  .format(trace_len, exec_len, trace_data, exec_data))
+    # Check to make sure everything is the same
+    # Decide if this is a system call we want to replay
+    if trace_len != exec_len:
+        raise ReplayDeltaError('Length from trace {}: {} does not match '
+                               'length from execution {}: {}'.
+                               format(trace_len_arg,
+                                      trace_len,
+                                      exec_len_arg,
+                                      exec_len))
+    if trace_data != exec_data:
+        raise ReplayDeltaError('Data from trace {}: {} does not match '
+                               'data from execution {}: {}'
+                               .format(trace_buf_arg,
+                                       trace_data,
+                                       exec_buf_arg,
+                                       exec_data))
 
 
 def open_exit_handler(syscall_id, syscall_object, pid):
