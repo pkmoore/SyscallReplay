@@ -87,7 +87,7 @@ def rt_sigaction_entry_handler(syscall_id, syscall_object, pid):
 
         old_action_end_pos = old_action_start_pos + (4 if restorer_value_in_trace
                                                       else 3)
-        
+
         # seperate out the old_action part of the trace    
         old_action_args = syscall_object.args[old_action_start_pos:old_action_end_pos]
 
@@ -119,10 +119,10 @@ def rt_sigaction_entry_handler(syscall_id, syscall_object, pid):
                 if (flag_int == None):
                     raise LookupError("The flag " + str(flag) + "  was not found")
                 old_sa_flags += flag_int
-            
+
         logging.debug("Old Flags: " + str(old_sa_flags))
 
-        
+
         # if flags include SA_SIGINFO should use old_sa_sigaction instead of old_sa_handler
         should_use_sigaction = (old_sa_flags & 4) == 4
         if (should_use_sigaction):
@@ -132,7 +132,7 @@ def rt_sigaction_entry_handler(syscall_id, syscall_object, pid):
         # old_sa_handler
         old_sa_handler_str = old_action_args[0].value.strip('{')
         logging.debug("Handler Raw: " + str(old_sa_handler_str));
-        
+
         # handler is either one of 3 default handlers (in which case strace gives a name) or a pointer value
         default_handler_int = SIGNAL_DFLT_HANDLER_TO_INT.get(old_sa_handler_str)
         if (default_handler_int != None):
@@ -141,7 +141,7 @@ def rt_sigaction_entry_handler(syscall_id, syscall_object, pid):
             old_sa_handler = int(old_sa_handler_str, 16)
         logging.debug("Old Handler: 0x%x" % (old_sa_handler & 0xffffffff))
 
-        
+
         # sa_mask
         old_mask_list_str = old_action_args[1].value
         is_non_empty_list = old_mask_list_str != '[]'
@@ -152,7 +152,7 @@ def rt_sigaction_entry_handler(syscall_id, syscall_object, pid):
             old_mask_list = ["SIG" + name for name in old_mask_list if not str(name)[0:3] == "SIG"]
             # convert names into ints
             old_sa_mask_list = [SIGNAL_SIG_TO_INT[sig] for sig in old_mask_list]
-            
+
         logging.debug("Old Mask List: " + str(old_sa_mask_list))
 
 
@@ -165,7 +165,7 @@ def rt_sigaction_entry_handler(syscall_id, syscall_object, pid):
             logging.debug("No restorer found")
 
         logging.debug("ARGUMENTS END")
-    
+
         cint.populate_rt_sigaction_struct(pid,
                                           old_action_addr,
                                           old_sa_handler,
