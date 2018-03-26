@@ -751,6 +751,8 @@ def open_entry_handler(syscall_id, syscall_object, pid):
                         'file name from trace ({})'.format(fn_from_execution,
                                                            fn_from_trace))
     fd_from_trace = int(syscall_object.ret[0])
+    if fd_from_trace in cint.injected_state['open_fds']:
+        raise ReplayDeltaError('Epoll would return already open fd')
     if fd_from_trace != -1:
         cint.injected_state['open_fds'].append(fd_from_trace)
     noop_current_syscall(pid)
