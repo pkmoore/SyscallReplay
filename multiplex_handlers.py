@@ -90,10 +90,17 @@ def select_entry_handler(syscall_id, syscall_object, pid):
     apply_return_conditions(pid, syscall_object)
 
 
-# Similarly to the select() handler, all calls to poll() are replayed.
-# For the same reasons...
-
 def poll_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    nothing
+    Sets:
+    return value: Number of struct with non-zero revents or -1 (error)
+    errno
+
+    Not Implemented:
+    * Determine what is not implemented
+    """
     logging.debug('Entering poll entry handler')
     array_address = cint.peek_register(pid, cint.EBX)
     if syscall_object.ret[0] == 0:
