@@ -157,6 +157,23 @@ def epoll_create_entry_handler(sycall_id, syscall_object, pid):
     apply_return_conditions(pid, syscall_object)
 
 
+def epoll_ctl_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    Sets:
+    return value: success (0) or error (-1)
+    errno
+
+    Not Implemented:
+    * Make sure there aren't any side-effects that need to be reproduced
+    """
+    logging.debug('Entrying epoll_ctl entry handler')
+    validate_integer_argument(pid, syscall_object, 0, 0)
+    validate_integer_argument(pid, syscall_object, 2, 2)
+    noop_current_syscall(pid)
+    apply_return_conditions(pid, syscall_object)
+
+
 def select_entry_debug_printer(pid, orig_eax, syscall_object):
     readfds_addr = cint.peek_register(pid, cint.ECX)
     writefds_addr = cint.peek_register(pid, cint.EDX)
