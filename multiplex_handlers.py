@@ -160,14 +160,17 @@ def epoll_create_entry_handler(sycall_id, syscall_object, pid):
 def epoll_ctl_entry_handler(syscall_id, syscall_object, pid):
     """Replay Always
     Checks:
+    0: epfd: epoll instance file descriptor
+    2: fd: file descriptor associated with the operation
     Sets:
     return value: success (0) or error (-1)
     errno
 
     Not Implemented:
     * Make sure there aren't any side-effects that need to be reproduced
+    * Convert op to int and check it
     """
-    logging.debug('Entrying epoll_ctl entry handler')
+    logging.debug('Entering epoll_ctl entry handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
     validate_integer_argument(pid, syscall_object, 2, 2)
     noop_current_syscall(pid)
