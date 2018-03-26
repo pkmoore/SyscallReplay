@@ -177,6 +177,30 @@ def epoll_ctl_entry_handler(syscall_id, syscall_object, pid):
     apply_return_conditions(pid, syscall_object)
 
 
+def epoll_wait_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: epfd: epoll instance file descriptor
+    2: maxevents: number of events that can be returned
+    3: timeout: how long to wait before returning with no results
+    Sets:
+    return value: Number of file desciptors with events or -1 (failure)
+    errno
+
+    Not Implemented:
+    """
+
+    logging.debug('Entering epoll_wait entry_handler')
+    validate_integer_argument(pid, syscall_object, 0, 0)
+    validate_integer_argument(pid, syscall_object, 2, 2)
+    validate_integer_argument(pid, syscall_object, 3, 3)
+    val = syscall_object.args[1].value
+    if val != '[]' and val[:2] != '0x':
+            raise NotImplementedError('epoll_wait with events not implemented')
+    noop_current_syscall(pid)
+    apply_return_conditions(pid, syscall_object)
+
+
 def select_entry_debug_printer(pid, orig_eax, syscall_object):
     readfds_addr = cint.peek_register(pid, cint.ECX)
     writefds_addr = cint.peek_register(pid, cint.EDX)
