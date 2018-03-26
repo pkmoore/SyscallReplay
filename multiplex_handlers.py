@@ -136,6 +136,27 @@ def poll_entry_handler(syscall_id, syscall_object, pid):
     apply_return_conditions(pid, syscall_object)
 
 
+def epoll_create_entry_handler(sycall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: integer flags
+    Sets:
+    return value: The file descriptor or -1 (error)
+    errno
+
+    Not Implemented:
+    """
+    logging.debug('Entering epoll_create entry handler')
+    validate_integer_argument(pid, syscall_object, 0, 0)
+    fd_from_trace = int(syscall_object.ret[0])
+    if fd_from_trace in cint.injected_state['open_fds']:
+        raise ReplayDeltaError('Epoll would return already open fd')
+    if fd_from_trace != -1:
+        cint.injected_state['open_fds'].append(fd_from_trace)
+    noop_current_syscall(pid)
+    apply_return_conditions(pid, syscall_object)
+
+
 def select_entry_debug_printer(pid, orig_eax, syscall_object):
     readfds_addr = cint.peek_register(pid, cint.ECX)
     writefds_addr = cint.peek_register(pid, cint.EDX)
