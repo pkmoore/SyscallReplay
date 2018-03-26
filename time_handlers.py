@@ -126,6 +126,44 @@ def time_entry_handler(syscall_id, syscall_object, pid):
         apply_return_conditions(pid, syscall_object)
 
 
+def time_forger(pid):
+    """Forge a time() call based on injected state
+    Nothing
+    Sets:
+    return value: The time or -1 (error)
+    0: The the value of the integer pointed to by 0, if not NULL
+    errno
+
+    Not Implemented:
+    """
+
+    logging.debug('Forging time call')
+    t = cint.injected_state['time_call_results'][-1]
+    new_t = t + _get_avg_time_result_delta()
+    cint.injected_state['time_call_results'].append(new_t)
+    syscall_object = lambda: None
+    syscall_object.name = 'time'
+    syscall_object.ret = []
+    syscall_object.ret.append(t)
+    addr = cint.peek_register(pid, cint.EBX)
+    if addr != 0:
+        cint.populate_unsigned_int(pid, addr, t)
+    noop_current_syscall(pid)
+    apply_return_conditions(pid, syscall_object)
+
+def _get_avg_time_result_delta():
+    times = cint.injected_state['time_call_results']
+    deltas = []
+    for i, v in enumerate(times):
+        if i == 0:
+            continue
+        deltas.append(times[i] - times[i-1])
+    if len(deltas) == 0:
+        # We don't have enough to do averages so start with 10
+        return 10
+    return reduce(lambda x, y: x + y, deltas) / len(deltas)
+
+
 def gettimeofday_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering gettimeofday entry handler')
     if syscall_object.ret[0] == -1:
