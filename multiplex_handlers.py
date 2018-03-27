@@ -8,6 +8,8 @@ from poll_parser import (
     parse_poll_input,
 )
 
+from os_dict import EPOLL_EVENT_TO_NUM
+
 
 # A lot of the parsing in this function needs to be moved into the
 # posix-omni-parser codebase. there really needs to be an "ARRAY OF FILE
@@ -192,11 +194,51 @@ def epoll_wait_entry_handler(syscall_id, syscall_object, pid):
 
     logging.debug('Entering epoll_wait entry_handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
-    validate_integer_argument(pid, syscall_object, 2, 2)
-    validate_integer_argument(pid, syscall_object, 3, 3)
-    val = syscall_object.args[1].value
-    if val != '[]' and val[:2] != '0x':
-            raise NotImplementedError('epoll_wait with events not implemented')
+    validate_integer_argument(pid, syscall_object, -2, 2)
+    validate_integer_argument(pid, syscall_object, -1, 3)
+    struct_str = syscall_object.original_line
+    struct_str = struct_str[struct_str.find(',')+1:]
+    struct_str = struct_str[:struct_str.rfind(',')]
+    struct_str = struct_str[:struct_str.rfind(',')]
+    struct_str = struct_str.strip(' []')
+    events = []
+    while struct_str != '':
+        # ends in }}
+        closing_curl_index = struct_str.find('}') + 1
+        event = struct_str[1:struct_str.find(',')]
+        if '|' in event:
+            raise NotImplementError('multiple events unsupported')
+        data_struct_start = struct_str[1:].find('{') + 1
+        data_struct_end = closing_curl_index
+        data_struct = struct_str[data_struct_start:data_struct_end]
+        tmp = {}
+        tmp['event'] = event
+        data_dict = {}
+        for i in data_struct.split(','):
+            i = i.strip(' {}')
+            data_dict[i.split('=')[0]] = i.split('=')[1]
+        tmp['data'] = data_dict
+        events.append(tmp)
+        struct_str = struct_str[closing_curl_index+1:]
+    print(events)
+    try:
+        for i in events:
+            if i['data']['u32'] != i['data']['u64']:
+                raise NotImplementedError('differing u32 and u64 values')
+    except KeyError:
+        raise NotImplementedError('both u32 and u64 required')
+
+    addr = cint.peek_register(pid, cint.ECX)
+    cint.enable_debug_output(10)
+    for i in events:
+        print('Writing event')
+        cint.write_epoll_struct(pid,
+                                addr,
+                                EPOLL_EVENT_TO_NUM[i['event']],
+                                int(i['data']['u64']))
+        # sizeof(struct epoll_event)
+        addr += 12
+    cint.disable_debug_output()
     noop_current_syscall(pid)
     apply_return_conditions(pid, syscall_object)
 

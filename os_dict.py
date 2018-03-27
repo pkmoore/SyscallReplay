@@ -405,3 +405,25 @@ MAGIC_NAME_TO_MAGIC = {
 }
 
 MAGIC_MAGIC_TO_NAME = {y: x for x, y in MAGIC_NAME_TO_MAGIC.iteritems()}
+
+
+EPOLL_EVENT_TO_NUM = {
+    'EPOLLIN': 0x001,
+    'EPOLLPRI': 0x002,
+    'EPOLLOUT': 0x004,
+    'EPOLLRDNORM': 0x040,
+    'EPOLLRDBAND': 0x080,
+    'EPOLLWRNORM': 0x100,
+    'EPOLLWRBAND': 0x200,
+    'EPOLLMSG': 0x400,
+    'EPOLLERR': 0x008,
+    'EPOLLHUP': 0x010,
+    'EPOLLRDHUP': 0x2000,
+    # Be careful of these below
+    'EPOLLWAKEUP': 2000000,
+    'EPOLLONESHOT': 40000000,
+    'EPOLLET': 80000000
+}
+
+
+EPOLL_NUM_TO_EVENT = {y: x for x, y in EPOLL_EVENT_TO_NUM.iteritems()}

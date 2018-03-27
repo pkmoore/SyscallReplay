@@ -29,6 +29,8 @@
 #include <sched.h>
 #include <signal.h>
 #include <sys/uio.h>
+#include <inttypes.h>
+#include <sys/epoll.h>
 
 static PyObject* SyscallReplayError;
 
@@ -1829,6 +1831,34 @@ static PyObject* syscallreplay_write_poll_result(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 }
 
+static PyObject* syscallreplay_write_epoll_struct(PyObject* self, PyObject* args) {
+    self = self;
+    pid_t child;
+    void* addr;
+    uint32_t events;
+    uint64_t data;
+
+    if(!PyArg_ParseTuple(args, "IIIK", &child, (int*)&addr, &events, &data)) {
+        PyErr_SetString(SyscallReplayError, "write_poll_result arg parse failed");
+    }
+    struct epoll_event s;
+    copy_child_process_memory_into_buffer(child, addr, (unsigned char*)&s, sizeof(s));
+    if(DEBUG) {
+        printf("C: epoll_wait: sizeof(s): %d\n", sizeof(s));
+        printf("C: epoll_wait: s.events: %u\n", s.events);
+        printf("C: epoll_wait: s.data: %" PRIu64 "\n", s.data);
+    }
+    s.events = events;
+    s.data.u64 = data;
+    copy_buffer_into_child_process_memory(child,
+                                          addr,
+                                          (unsigned char*)&s,
+                                          sizeof(struct epoll_event));
+
+
+    Py_RETURN_NONE;
+}
+
 static PyObject* syscallreplay_write_sendmmsg_lengths(PyObject* self,
                                                     PyObject* args) {
     // unused
@@ -1973,6 +2003,8 @@ static PyMethodDef SyscallReplayMethods[]  = {
      METH_VARARGS, "populate_stack_structure"},
     {"populate_readv_vectors", syscallreplay_populate_readv_vectors,
     METH_VARARGS, "populate_readv_vectors"},
+    {"write_epoll_struct", syscallreplay_write_epoll_struct,
+    METH_VARARGS, "write epoll struct"},
     {NULL, NULL, 0, NULL}
 };
 
