@@ -259,6 +259,17 @@ def mkdir_entry_handler(syscall_id, syscall_object, pid):
 
 
 def writev_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: int file descriptor: The file descriptor being read from
+    2: size_t length: Length of bytes to write
+    Sets:
+    return value: number of bytes read or -1 (error)
+    errno
+
+    Not Implemented:
+    * Determine what is not implemented
+    """
     logging.debug('Entering writev entry handler')
     # Validate file descriptor
     validate_integer_argument(pid, syscall_object, 0, 0)
@@ -267,35 +278,30 @@ def writev_entry_handler(syscall_id, syscall_object, pid):
                               syscall_object,
                               len(syscall_object.args)-1,
                               2)
-    vectors = int(syscall_object.args[-1].value)
-    args = syscall_object.args[1:-1]
-    logging.debug(args)
-    datas = [args[x].value for x in range(0, len(args), 2)]
-    datas[0] = datas[0].lstrip('[{')
-    datas = [x.lstrip('{') for x in datas]
-    datas = [x.lstrip('"').rstrip('"') for x in datas]
-    datas = [x.decode('string-escape').encode('hex') for x in datas]
-    lengths = [args[x].value for x in range(1, len(args), 2)]
-    lengths[0] = lengths[0][0]
-    lengths = [int(x.rstrip('}]')) for x in lengths]
-    logging.debug('Vectors: %d', vectors)
-    logging.debug('Datas: %s', datas)
-    logging.debug('Lengths: %s', lengths)
-    addr = cint.peek_register(pid, cint.ECX)
-    logging.debug('Addr: %d', addr)
-    vector_addresses = []
-    for i in range(vectors):
-        vector_addresses.append(cint.peek_address(pid, addr + (i * 8)))
-    # We may need to copy buffers over manually at some point.
-    # Working for now.
-    fd = int(syscall_object.args[0].value)
-    if should_replay_based_on_fd(fd):
-        logging.debug('We will replay this system call')
-        noop_current_syscall(pid)
-        apply_return_conditions(pid, syscall_object)
-    else:
-        logging.debug('Not replaying this system call')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object)
+    #vectors = int(syscall_object.args[-1].value)
+    #args = syscall_object.args[1:-1]
+    #logging.debug(args)
+    #datas = [args[x].value for x in range(0, len(args), 2)]
+    #datas[0] = datas[0].lstrip('[{')
+    #datas = [x.lstrip('{') for x in datas]
+    #datas = [x.lstrip('"').rstrip('"') for x in datas]
+    #datas = [x.decode('string-escape').encode('hex') for x in datas]
+    #lengths = [args[x].value for x in range(1, len(args), 2)]
+    #lengths[0] = lengths[0][0]
+    #lengths = [int(x.rstrip('}]')) for x in lengths]
+    #logging.debug('Vectors: %d', vectors)
+    #logging.debug('Datas: %s', datas)
+    #logging.debug('Lengths: %s', lengths)
+    #addr = cint.peek_register(pid, cint.ECX)
+    #logging.debug('Addr: %d', addr)
+    #vector_addresses = []
+    #for i in range(vectors):
+    #    vector_addresses.append(cint.peek_address(pid, addr + (i * 8)))
+    ## We may need to copy buffers over manually at some point.
+    ## Working for now.
+    #fd = int(syscall_object.args[0].value)
+    noop_current_syscall(pid)
+    apply_return_conditions(pid, syscall_object)
 
 
 def writev_exit_handler(syscall_id, syscall_object, pid):
