@@ -160,7 +160,7 @@ def _get_avg_time_result_delta():
         deltas.append(times[i] - times[i-1])
     if len(deltas) == 0:
         # We don't have enough to do averages so start with 10
-        return 10
+        return 1000
     return reduce(lambda x, y: x + y, deltas) / len(deltas)
 
 
