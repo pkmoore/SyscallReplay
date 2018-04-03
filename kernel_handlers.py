@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import sys
 import logging
 
@@ -18,14 +20,21 @@ from util import (ReplayDeltaError,
                   cleanup_return_value,
                   validate_integer_argument,
                   validate_address_argument,
-                  validate_return_value,)
+                  validate_return_value,
+                  next_syscall,)
 
 def brk_entry_handler(syscall_id, syscall_object, pid):
     """Never Replay. Only check the integer argument
     Checks:
     0: void* addr: The address to which the program break should be set
     Sets:
-    Nothing
+    the return value: The new program break
+
+    Special Action:
+    Simulates brk() by crafting a mmap2() call that maps the same region of
+    memory.
+
+    TODO: Clean up printing and all that
 
     """
 
@@ -35,7 +44,68 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
                               0,
                               0,
                               except_on_mismatch=False)
+    last_map_start = cint.injected_state['brks'][-1]['start']
+    last_map_size = cint.injected_state['brks'][-1]['size']
+    last_map_end = last_map_start + last_map_size
+    new_brk = int(syscall_object.ret[0], 16)
+    new_map_size = new_brk - last_map_end
 
+    # Preserve the registers mmap uses for parameters
+    save_EBX  = cint.peek_register(pid, cint.EBX)
+    save_ECX  = cint.peek_register(pid, cint.ECX)
+    save_EDX  = cint.peek_register(pid, cint.EDX)
+    save_ESI  = cint.peek_register(pid, cint.ESI)
+    save_EDI  = cint.peek_register(pid, cint.EDI)
+    save_EBP  = cint.peek_register(pid, cint.EBP)
+
+    _brk_debug_print_regs(pid)
+
+    # transform current system call to mmap
+    cint.poke_register(pid, cint.ORIG_EAX, 192)
+    cint.poke_register(pid, cint.EAX, 192)
+    # Where to start our new mapping from
+    cint.poke_register(pid, cint.EBX, last_map_end)
+    # How big of a mapping do we want
+    cint.poke_register(pid, cint.ECX, new_map_size)
+    # PROT options
+    cint.poke_register(pid, cint.EDX, cint.injected_state['brks'][-1]['prot'])
+    # Flags options
+    flags = cint.injected_state['brks'][-1]['flags']
+    flags |= 32
+    flags |= 16
+    cint.poke_register(pid, cint.ESI, flags)
+    # fd
+    cint.poke_register(pid, cint.EDI, -1)
+    # offset
+    cint.poke_register(pid, cint.EBP, 0)
+
+    # Advance to our crafted mmap's exit
+    cint.syscall(pid)
+    next_syscall()
+
+    _brk_debug_print_regs(pid)
+
+   # restore registers
+    cint.poke_register(pid, cint.EBX, save_EBX)
+    cint.poke_register(pid, cint.ECX, save_ECX)
+    cint.poke_register(pid, cint.EDX, save_EDX)
+    cint.poke_register(pid, cint.ESI, save_ESI)
+    cint.poke_register(pid, cint.EDI, save_EDI)
+    cint.poke_register(pid, cint.EBP, save_EBP)
+
+    _brk_debug_print_regs(pid)
+    apply_return_conditions(pid, syscall_object)
+    cint.entering_syscall = False
+
+def _brk_debug_print_regs(pid):
+    logging.debug('ORIG_EAX: %d', cint.peek_register(pid, cint.ORIG_EAX))
+    logging.debug('EAX: %d', cint.peek_register(pid, cint.EAX))
+    logging.debug('EBX: %d', cint.peek_register(pid, cint.EBX))
+    logging.debug('ECX: %d', cint.peek_register(pid, cint.ECX))
+    logging.debug('EDX: %d', cint.peek_register(pid, cint.EDX))
+    logging.debug('ESI: %d', cint.peek_register(pid, cint.ESI))
+    logging.debug('EDI: %d', cint.peek_register(pid, cint.EDI))
+    logging.debug('EBP: %d', cint.peek_register(pid, cint.EBP))
 
 def brk_exit_handler(syscall_id, syscall_object, pid):
     """Never Replay.  Only check the return value and WARN if it is
