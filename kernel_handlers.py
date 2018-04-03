@@ -24,7 +24,7 @@ from util import (ReplayDeltaError,
                   next_syscall,)
 
 def brk_entry_handler(syscall_id, syscall_object, pid):
-    """Never Replay. Only check the integer argument
+    """Faked out creatively. Only check the integer argument
     Checks:
     0: void* addr: The address to which the program break should be set
     Sets:
@@ -411,14 +411,20 @@ def getrlimit_entry_handler(syscall_id, syscall_object, pid):
 
 
 def ioctl_entry_handler(syscall_id, syscall_object, pid):
+    """Always replay.
+    Checks:
+    0: int fd: the file descriptor being operated on
+    Sets:
+    The return value
+
+    Special Action:
+    does a variety of things depending on the supplied action
+
+
+    """
     logging.debug('Entering ioctl handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
     trace_fd = int(syscall_object.args[0].value)
-    if not should_replay_based_on_fd(trace_fd):
-        logging.debug('Not replaying this system call')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object)
-        return
-    logging.debug('Replaying this system call')
     edx = cint.peek_register(pid, cint.EDX)
     logging.debug('edx: %x', edx & 0xffffffff)
     addr = edx
