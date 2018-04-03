@@ -371,7 +371,7 @@ def close_entry_handler(syscall_id, syscall_object, pid):
     validate_integer_argument(pid, syscall_object, 0, 0)
     fd_from_trace = int(syscall_object.args[0].value)
     # We always replay unsuccessful close calls
-    if syscall_object.ret[0] == -1:
+    if syscall_object.ret[0] != -1:
         cint.injected_state['open_fds'].remove(fd_from_trace)
     noop_current_syscall(pid)
     apply_return_conditions(pid, syscall_object)
