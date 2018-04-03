@@ -151,6 +151,14 @@ def getsockname_exit_handler(syscall_id, syscall_object, pid):
 
 
 def shutdown_subcall_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: sockfd: the socket file descriptor
+    Sets:
+    return value: 0 (success) or -1 (error)
+    errno
+
+    """
     logging.debug('Entering shutdown entry handler')
     # Pull out the info we can check
     ecx = cint.peek_register(pid, cint.ECX)
@@ -160,30 +168,33 @@ def shutdown_subcall_entry_handler(syscall_id, syscall_object, pid):
     # TODO: We need to check the 'how' parameter here
     # Check to make sure everything is the same
     # Decide if we want to replay this system call
-    if should_replay_based_on_fd(fd_from_trace):
-        logging.info('Replaying this system call')
-        noop_current_syscall(pid)
-        apply_return_conditions(pid, syscall_object)
-    else:
-        logging.info('Not replaying this system call')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object, params_addr=params)
+    logging.info('Replaying this system call')
+    noop_current_syscall(pid)
+    apply_return_conditions(pid, syscall_object)
 
 
 def setsockopt_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: sockfd: the socket file descriptor
+    Sets:
+    optval: out parameter
+    return value: 0 (success) or -1 (error)
+    errno
+
+    Not Implemented: More checking
+
+    """
     logging.debug('Entering setsockopt handler')
-    # Pull out what we can compare
     ecx = cint.peek_register(pid, cint.ECX)
     params = extract_socketcall_parameters(pid, ecx, 5)
     fd_from_trace = int(syscall_object.args[0].value)
     optval_addr = params[3]
     # We don't check param[3] because it is an address of an empty buffer
     # We don't check param[4] because it is an address of an empty length
-    # Check to make sure everything is the same
     validate_integer_argument(pid, syscall_object, 0, 0, params=params)
-    # We should always replay calls to bad file descriptors because
-    # there is no reason not to
-    if int(syscall_object.ret[0]) == -1 \
-       or should_replay_based_on_fd(fd_from_trace):
+    noop_current_syscall(pid)
+    if int(syscall_object.ret[0]) == -1:
         logging.info('Replaying this system call')
         optval_len = int(syscall_object.args[4].value)
         if optval_len != 4:
@@ -193,13 +204,9 @@ def setsockopt_entry_handler(syscall_id, syscall_object, pid):
         logging.debug('Optval: %s', optval)
         logging.debug('Optval Length: %s', optval_len)
         logging.debug('Optval addr: %x', optval_addr % 0xffffffff)
-        noop_current_syscall(pid)
         logging.debug('Writing values')
         cint.populate_int(pid, optval_addr, optval)
-        apply_return_conditions(pid, syscall_object)
-    else:
-        logging.info('Not replaying this system call')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object, params_addr=params)
+    apply_return_conditions(pid, syscall_object)
 
 
 def getsockopt_entry_handler(syscall_id, syscall_object, pid):
