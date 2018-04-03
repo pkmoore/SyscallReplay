@@ -357,7 +357,7 @@ def accept_subcall_entry_handler(syscall_id, syscall_object, pid):
     validate_integer_argument(pid, syscall_object, 0, 0, params=params)
     # Decide if this is a system call we want to replay
     noop_current_syscall(pid)
-    if syscall_object.args[1].value != 'NULL':
+    if syscall_object.ret[0] != -1 and syscall_object.args[1].value != 'NULL':
         sockfields = syscall_object.args[1].value
         family = sockfields[0].value
         port = int(sockfields[1].value)
