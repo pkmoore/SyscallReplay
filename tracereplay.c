@@ -1728,6 +1728,20 @@ static PyObject* syscallreplay_attach(PyObject* self, PyObject* args) {
   return Py_BuildValue("i", status);
 }
 
+static PyObject* syscallreplay_detach(PyObject* self, PyObject* args) {
+    self = self;
+    pid_t child;
+    int status;
+    if(!PyArg_ParseTuple(args, "I", &child) == -1) {
+        PyErr_SetString(SyscallReplayError, "Detach parsetuple failed");
+    }
+    if(ptrace(PTRACE_DETACH, child, NULL, NULL) == -1) {
+        perror("Detach failed");
+        PyErr_SetString(SyscallReplayError, "Detach failed");
+    }
+    Py_RETURN_NONE;
+}
+
 static PyObject* syscallreplay_sigcont(PyObject* self, PyObject* args) {
   // unused;
   self = self;
@@ -1937,6 +1951,7 @@ static PyMethodDef SyscallReplayMethods[]  = {
     {"wait", syscallreplay_wait, METH_VARARGS, "wait on child process"},
     {"syscall", syscallreplay_syscall, METH_VARARGS, "wait for syscall"},
     {"attach", syscallreplay_attach, METH_VARARGS, "attach to pid"},
+    {"detach", syscallreplay_detach, METH_VARARGS, "detach from pid"},
     {"sigcont", syscallreplay_sigcont, METH_VARARGS, "send SIGCONT to pid"},
     {"waitpid", syscallreplay_waitpid, METH_VARARGS, "wait on a pid"},
     {"peek_address", syscallreplay_peek_address, METH_VARARGS, "peek address"},
