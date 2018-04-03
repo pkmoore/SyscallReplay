@@ -329,6 +329,17 @@ def socket_entry_handler(syscall_id, syscall_object, pid):
 
 
 def accept_subcall_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: sockfd: the socket file descriptor
+    Sets:
+    return value: The file descriptor -1 (error)
+    errno
+
+    Not Implemented:
+    * Implement a function to check null terminated strings to clean up this
+      mess of checking
+    """
     logging.debug('Checking if line from trace is interrupted accept')
     # Hack to fast forward through interrupted accepts
     while syscall_object.ret[0] == '?':
@@ -345,41 +356,35 @@ def accept_subcall_entry_handler(syscall_id, syscall_object, pid):
     fd_from_trace = syscall_object.args[0].value
     validate_integer_argument(pid, syscall_object, 0, 0, params=params)
     # Decide if this is a system call we want to replay
-    if should_replay_based_on_fd(fd_from_trace):
-        logging.debug('Replaying this system call')
-        noop_current_syscall(pid)
-        if syscall_object.args[1].value != 'NULL':
-            sockfields = syscall_object.args[1].value
-            family = sockfields[0].value
-            port = int(sockfields[1].value)
-            ip = sockfields[2].value
-            sockaddr_length = int(syscall_object.args[2].value.strip('[]'))
-            logging.debug('Family: %s', family)
-            logging.debug('Port: %s', port)
-            logging.debug('IP: %s', ip)
-            logging.debug('sockaddr Length: %s', sockaddr_length)
-            logging.debug('sockaddr addr: %x', sockaddr_addr & 0xffffffff)
-            logging.debug('sockaddr length addr: %x',
-                          sockaddr_len_addr & 0xffffffff)
-            logging.debug('pid: %s', pid)
-            cint.populate_af_inet_sockaddr(pid,
-                                                  sockaddr_addr,
-                                                  port,
-                                                  ip,
-                                                  sockaddr_len_addr,
-                                                  sockaddr_length)
-        if syscall_object.ret[0] != -1:
-            ret = syscall_object.ret[0]
-            if ret in tracereplay.REPLAY_FILE_DESCRIPTORS:
-                raise Exception('Syscall object return value ({}) already '
-                                'exists in tracked file descriptors list ({})'
-                                .format(ret,
-                                        tracereplay.REPLAY_FILE_DESCRIPTORS))
-            tracereplay.REPLAY_FILE_DESCRIPTORS.append(ret)
-        apply_return_conditions(pid, syscall_object)
-    else:
-        logging.info('Not replaying this system call')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object, params_addr=params)
+    noop_current_syscall(pid)
+    if syscall_object.args[1].value != 'NULL':
+        sockfields = syscall_object.args[1].value
+        family = sockfields[0].value
+        port = int(sockfields[1].value)
+        ip = sockfields[2].value
+        sockaddr_length = int(syscall_object.args[2].value.strip('[]'))
+        logging.debug('Family: %s', family)
+        logging.debug('Port: %s', port)
+        logging.debug('IP: %s', ip)
+        logging.debug('sockaddr Length: %s', sockaddr_length)
+        logging.debug('sockaddr addr: %x', sockaddr_addr & 0xffffffff)
+        logging.debug('sockaddr length addr: %x',
+                      sockaddr_len_addr & 0xffffffff)
+        logging.debug('pid: %s', pid)
+        cint.populate_af_inet_sockaddr(pid,
+                                              sockaddr_addr,
+                                              port,
+                                              ip,
+                                              sockaddr_len_addr,
+                                              sockaddr_length)
+    if syscall_object.ret[0] != -1:
+        ret = syscall_object.ret[0]
+        if ret in cint.injected_state['open_fds']:
+            raise Exception('Syscall object return value ({}) already '
+                            'exists in open file descriptors list'
+                            .format(ret))
+        cint.injected_state['open_fds'].append(ret)
+    apply_return_conditions(pid, syscall_object)
 
 
 def accept_exit_handler(syscall_id, syscall_object, pid):
