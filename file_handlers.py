@@ -53,7 +53,9 @@ def eventfd2_entry_handler(syscall_id, syscall_object, pid):
 
     logging.debug('Entering eventfd2 entry handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
-    add_replay_fd(int(syscall_object.ret[0]))
+    fd = syscall_object.ret[0]
+    if fd != -1:
+        cint.injected_state['open_fds'].append(syscall_object.ret[0])
     noop_current_syscall(pid)
     apply_return_conditions(pid, syscall_object)
 
