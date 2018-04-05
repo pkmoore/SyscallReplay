@@ -183,6 +183,26 @@ def gettimeofday_entry_handler(syscall_id, syscall_object, pid):
         apply_return_conditions(pid, syscall_object)
 
 
+def gettimeofday_forger(pid):
+    logging.debug('Forging gettimeofday call')
+    timezone_addr = cint.peek_register(pid, cint.ECX)
+    if timezone_addr != 0:
+        raise NotImplementedError('Cannot forge gettimeofday() with a timezone')
+    time_addr = cint.peek_register(pid, cint.EBX)
+    seconds = 0
+    microseconds = 0
+    syscall_object = lambda: None
+    syscall_object.name = 'gettimeofday'
+    syscall_object.ret = []
+    syscall_object.ret.append(0)
+    noop_current_syscall(pid)
+    cint.populate_timeval_structure(pid, time_addr, seconds, microseconds)
+    apply_return_conditions(pid, syscall_object)
+    # Back up one system call we passed it when we decided to forge this
+    # call
+    cint.syscall_index -= 1
+
+
 def clock_gettime_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering clock_gettime entry handler')
     if syscall_object.ret[0] == -1:
