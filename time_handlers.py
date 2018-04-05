@@ -139,7 +139,8 @@ def time_forger(pid):
 
     logging.debug('Forging time call')
     t = cint.injected_state['time_call_results'][-1]
-    new_t = t + _get_avg_time_result_delta()
+    times = cint.injected_state['time_call_results']
+    new_t = t + _get_avg_time_result_delta(times)
     cint.injected_state['time_call_results'].append(new_t)
     syscall_object = lambda: None
     syscall_object.name = 'time'
@@ -150,9 +151,43 @@ def time_forger(pid):
         cint.populate_unsigned_int(pid, addr, t)
     noop_current_syscall(pid)
     apply_return_conditions(pid, syscall_object)
+    # Back up one system call we passed it when we decided to forge this
+    # call
+    cint.syscall_index -= 1
 
-def _get_avg_time_result_delta():
-    times = cint.injected_state['time_call_results']
+
+def gettimeofday_forger(pid):
+    logging.debug('Forging gettimeofday call')
+    timezone_addr = cint.peek_register(pid, cint.ECX)
+    if timezone_addr != 0:
+        raise NotImplementedError('Cannot forge gettimeofday() with a timezone')
+    time_addr = cint.peek_register(pid, cint.EBX)
+    seconds_times = [x['seconds']
+                    for x in cint.injected_state['gettimeofdays']]
+    microseconds_times = [x['microseconds']
+                         for x in cint.injected_state['gettimeofdays']]
+    seconds_delta = _get_avg_time_result_delta(seconds_times)
+    microseconds_delta = _get_avg_time_result_delta(microseconds_times)
+    last_seconds = cint.injected_state['gettimeofdays'][-1]['seconds']
+    last_microseconds = cint.injected_state['gettimeofdays'][-1]['microseconds']
+    seconds = last_seconds + seconds_delta
+    microseconds = last_microseconds + microseconds_delta
+    cint.injected_state['gettimeofdays'].append({'seconds': seconds,
+                                                 'microseconds': microseconds})
+    logging.debug('Using seconds: %d microseconds: %d', seconds, microseconds)
+    syscall_object = lambda: None
+    syscall_object.name = 'gettimeofday'
+    syscall_object.ret = []
+    syscall_object.ret.append(0)
+    noop_current_syscall(pid)
+    cint.populate_timeval_structure(pid, time_addr, seconds, microseconds)
+    apply_return_conditions(pid, syscall_object)
+    # Back up one system call we passed it when we decided to forge this
+    # call
+    cint.syscall_index -= 1
+
+
+def _get_avg_time_result_delta(times):
     deltas = []
     for i, v in enumerate(times):
         if i == 0:
@@ -183,24 +218,6 @@ def gettimeofday_entry_handler(syscall_id, syscall_object, pid):
         apply_return_conditions(pid, syscall_object)
 
 
-def gettimeofday_forger(pid):
-    logging.debug('Forging gettimeofday call')
-    timezone_addr = cint.peek_register(pid, cint.ECX)
-    if timezone_addr != 0:
-        raise NotImplementedError('Cannot forge gettimeofday() with a timezone')
-    time_addr = cint.peek_register(pid, cint.EBX)
-    seconds = 0
-    microseconds = 0
-    syscall_object = lambda: None
-    syscall_object.name = 'gettimeofday'
-    syscall_object.ret = []
-    syscall_object.ret.append(0)
-    noop_current_syscall(pid)
-    cint.populate_timeval_structure(pid, time_addr, seconds, microseconds)
-    apply_return_conditions(pid, syscall_object)
-    # Back up one system call we passed it when we decided to forge this
-    # call
-    cint.syscall_index -= 1
 
 
 def clock_gettime_entry_handler(syscall_id, syscall_object, pid):
