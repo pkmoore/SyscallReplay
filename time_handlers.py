@@ -13,7 +13,7 @@ def timer_create_entry_handler(syscall_id, syscall_object, pid):
 
         if sigev_type != 'SIGEV_NONE':
             raise NotImplementedError("Sigevent type %s is not supported" % (sigev_type))
-        
+
         addr = cint.peek_register(pid, cint.EDX)
         logging.debug('timerid address: %x', addr)
 
@@ -21,7 +21,7 @@ def timer_create_entry_handler(syscall_id, syscall_object, pid):
         logging.debug(str(timerid))
 
         cint.populate_timer_t_structure(pid, addr, timerid);
-        
+
         noop_current_syscall(pid)
         apply_return_conditions(pid, syscall_object)
 
@@ -35,12 +35,12 @@ def timer_extract_and_populate_itimerspec(syscall_object, pid, addr, start_index
     interval_nanoseconds = int(syscall_object.args[i+1].value.strip('{}'))        
     logging.debug('Interval Seconds: %d', interval_seconds)
     logging.debug('Interval Nanoseconds: %d', interval_nanoseconds)
-    
+
     value_seconds = int(syscall_object.args[i+2].value.split("{")[1].strip())
     value_nanoseconds = int(syscall_object.args[i+3].value.strip('{}'))
     logging.debug('Value Seconds: %d', value_seconds)
     logging.debug('Value Nanoseconds: %d', value_nanoseconds)
-    
+
     logging.debug('Populating itimerspec structure')
     cint.populate_itimerspec_structure(pid, addr,
                                        interval_seconds, interval_nanoseconds,
@@ -179,8 +179,7 @@ def gettimeofday_entry_handler(syscall_id, syscall_object, pid):
         logging.debug('Seconds: %d', seconds)
         logging.debug('Microseconds: %d', microseconds)
         logging.debug('Populating timeval structure')
-        cint.populate_timeval_structure(pid, addr,
-                                               seconds, microseconds)
+        cint.populate_timeval_structure(pid, addr, seconds, microseconds)
         apply_return_conditions(pid, syscall_object)
 
 
