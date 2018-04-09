@@ -46,9 +46,18 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
                               except_on_mismatch=False)
     last_map_start = cint.injected_state['brks'][-1]['start']
     last_map_size = cint.injected_state['brks'][-1]['size']
-    last_map_end = last_map_start + last_map_size
+    # If flags are 0, we are shrinking, so the end of our last mapping is
+    # actually the address, rather than address + size
+    if cint.injected_state['brks'][-1]['flags'] == 0:
+        last_map_end = last_map_start
+    else:
+        last_map_end = last_map_start + last_map_size
+
     new_brk = int(syscall_object.ret[0], 16)
     new_map_size = new_brk - last_map_end
+
+    if new_brk < last_map_end:
+        raise NotImplementedError('munmap required here! Not implemented!')
 
     # Preserve the registers mmap uses for parameters
     save_EBX  = cint.peek_register(pid, cint.EBX)
@@ -80,7 +89,7 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     cint.poke_register(pid, cint.EBP, 0)
 
     # Advance to our crafted mmap's exit
-    cint.syscall(pid)
+    cint.syscall(pid, 0)
     next_syscall()
 
     _brk_debug_print_regs(pid)
