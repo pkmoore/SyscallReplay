@@ -646,14 +646,14 @@ static PyObject* syscallreplay_populate_timeval_structure(PyObject* self,
     void* addr;
     time_t seconds;
     suseconds_t microseconds;
-    if(!PyArg_ParseTuple(args, "iiil", &child, &addr, &seconds, &microseconds)) {
+    if(!PyArg_ParseTuple(args, "iill", &child, &addr, &seconds, &microseconds)) {
         PyErr_SetString(SyscallReplayError,
                         "copy_bytes failed parse failed");
     }
     if(DEBUG) {
         printf("C: timeval: child: %d\n", child);
         printf("C: timeval: addr: %p\n", addr);
-        printf("C: timeval: seconds: %d\n", (int)seconds);
+        printf("C: timeval: seconds: %ld\n", seconds);
         printf("C: timeval: microseconds: %ld\n", microseconds);
         printf("C: timeval: sizeof(seconds): %d\n", sizeof(seconds));
         printf("C: timeval: sizeof(microseconds): %d\n", sizeof(microseconds));
@@ -662,8 +662,10 @@ static PyObject* syscallreplay_populate_timeval_structure(PyObject* self,
     t.tv_sec = seconds;
     t.tv_usec = microseconds;
     if(DEBUG) {
-        printf("C: timeval: tv_sec: %d\n", (int)t.tv_sec);
+        printf("C: timeval: tv_sec: %ld\n", t.tv_sec);
         printf("C: timeval: tv_usec: %ld\n", t.tv_usec);
+        printf("C: timeval: sizeof(tv_sec): %d\n", sizeof(t.tv_sec));
+        printf("C: timeval: sizeof(tv_usec): %d\n", sizeof(t.tv_usec));
     }
     copy_buffer_into_child_process_memory(child, addr, (unsigned char*)&t, sizeof(t));
     Py_RETURN_NONE;
