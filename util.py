@@ -81,7 +81,7 @@ def noop_current_syscall(pid):
     cint.poke_register(pid, cint.ORIG_EAX, 20)
     # Tell ptrace we want the child process to stop at the next system call
     # event and restart its execution.
-    cint.syscall(pid)
+    cint.syscall(pid, 0)
     # Have our process monitor the execution of the child process until it
     # receives a system call event notification.  The notification we receive
     # at this point (if all goes according to plan) is the EXIT notification

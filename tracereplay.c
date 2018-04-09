@@ -1703,9 +1703,10 @@ static PyObject* syscallreplay_syscall(PyObject* self, PyObject* args) {
     // unused
     self = self;
     pid_t child;
-    PyArg_ParseTuple(args, "i", &child);
+    int signal;
+    PyArg_ParseTuple(args, "ii", &child, &signal);
     errno = 0;
-    if(ptrace(PTRACE_SYSCALL, child, SIGCONT, NULL) == -1) {
+    if(ptrace(PTRACE_SYSCALL, child, signal, NULL) == -1) {
         perror("syscallreplay_syscall failed");
     }
     Py_RETURN_NONE;
