@@ -6,6 +6,8 @@ different handler modules so we're at least better than that at this point...
 import binascii
 import logging
 import os
+import signal
+import sys
 import time
 from struct import pack, unpack
 import syscallreplay as cint
@@ -32,6 +34,12 @@ def string_time_to_int(strtime):
         strtime = strtime[:strtime.find('.')]
         return int(time.mktime(time.strptime(strtime,
                                              '%Y/%m/%d-%H:%M:%S')))
+
+def stop_for_debug(pid):
+    logging.debug('Stopping %d for debug', pid)
+    os.kill(pid, signal.SIGSTOP)
+    cint.detach(pid)
+    sys.exit(0)
 
 
 def advance_trace():
