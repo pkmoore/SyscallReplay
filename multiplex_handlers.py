@@ -223,13 +223,15 @@ def epoll_wait_entry_handler(syscall_id, syscall_object, pid):
     print(events)
     try:
         for i in events:
-            if i['data']['u32'] != i['data']['u64']:
-                raise NotImplementedError('differing u32 and u64 values')
+            if int(i['data']['u32']) != 0xFFFFFFFF & int(i['data']['u64']):
+                raise NotImplementError('differing u32 and u64 unsupported')
     except KeyError:
         raise NotImplementedError('both u32 and u64 required')
 
     addr = cint.peek_register(pid, cint.ECX)
+    logging.debug('addr: %x', addr)
     cint.enable_debug_output(10)
+    noop_current_syscall(pid)
     for i in events:
         print('Writing event')
         cint.write_epoll_struct(pid,
@@ -239,7 +241,6 @@ def epoll_wait_entry_handler(syscall_id, syscall_object, pid):
         # sizeof(struct epoll_event)
         addr += 12
     cint.disable_debug_output()
-    noop_current_syscall(pid)
     apply_return_conditions(pid, syscall_object)
 
 
