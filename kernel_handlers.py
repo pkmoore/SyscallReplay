@@ -23,6 +23,11 @@ from util import (ReplayDeltaError,
                   validate_return_value,
                   next_syscall,)
 
+# Track whether the flags and prot of injected state brk() records are
+# supported.  Store this result here once we have done this one time so we
+# don't have to re-check for every brk() call
+flags_and_prot_ok = False
+
 def brk_entry_handler(syscall_id, syscall_object, pid):
     """Faked out creatively. Only check the integer argument
     Checks:
@@ -39,6 +44,7 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     """
 
     logging.debug('brk entry handler')
+    _check_flags_and_prot(cint.injected_state['brks'])
     validate_address_argument(pid,
                               syscall_object,
                               0,
@@ -77,9 +83,10 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     # How big of a mapping do we want
     cint.poke_register(pid, cint.ECX, new_map_size)
     # PROT options
-    cint.poke_register(pid, cint.EDX, cint.injected_state['brks'][-1]['prot'])
+    prot = 3 #cint.injected_state['brks'][-1]['prot']
+    cint.poke_register(pid, cint.EDX, prot)
     # Flags options
-    flags = cint.injected_state['brks'][-1]['flags']
+    flags = 2 #cint.injected_state['brks'][-1]['flags']
     flags |= 32
     flags |= 16
     cint.poke_register(pid, cint.ESI, flags)
@@ -105,6 +112,19 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     _brk_debug_print_regs(pid)
     apply_return_conditions(pid, syscall_object)
     cint.entering_syscall = False
+
+def _check_flags_and_prot(brks):
+    global flags_and_prot_ok
+    if not flags_and_prot_ok:
+        for i in brks:
+            if i['flags'] != 0:
+                if i['flags'] != 2:
+                    raise NotImplementedError('Got unsupported flags value {} '
+                                              'for {}'.format(i['flags'], i))
+                if i['prot'] != 3:
+                    raise NotImplementedError('Got unsupported prot value {} '
+                                              'for {}'.format(i['prot'], i))
+        flags_and_prot_ok = True
 
 def _brk_debug_print_regs(pid):
     logging.debug('ORIG_EAX: %d', cint.peek_register(pid, cint.ORIG_EAX))
