@@ -101,6 +101,18 @@ def getpeername_entry_handler(syscall_id, syscall_object, pid):
 
 
 def getsockname_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: The socket file descriptor
+    Sets:
+    addr: a struct sockaddr populated with the requested information
+    addrlen: length of the sockaddr struct being populated
+    return value: 0 (success) or -1 (failure)
+    errno
+
+    Not Implemented:
+    * Use address validator to check the addresses
+    """
     logging.debug('Entering getsockname handler')
     # Pull out the info that we can check
     ecx = cint.peek_register(pid, cint.ECX)
@@ -111,39 +123,35 @@ def getsockname_entry_handler(syscall_id, syscall_object, pid):
     fd_from_trace = syscall_object.args[0].value
     validate_integer_argument(pid, syscall_object, 0, 0, params=params)
     # Decide if this is a file descriptor we want to deal with
-    if should_replay_based_on_fd(fd_from_trace):
-        logging.info('Replaying this system call')
-        noop_current_syscall(pid)
-        if syscall_object.ret[0] != -1:
-            logging.debug('Got successful getsockname call')
-            addr = params[1]
-            length_addr = params[2]
-            length = int(syscall_object.args[2].value.strip('[]'))
-            logging.debug('Addr: %d', addr)
-            logging.debug('Length addr: %d', length_addr)
-            logging.debug('Length: %d', length)
-            sockfields = syscall_object.args[1].value
-            family = sockfields[0].value
-            port = int(sockfields[1].value)
-            ip = sockfields[2].value
-            logging.debug('Family: %s', family)
-            logging.debug('Port: %d', port)
-            logging.debug('Ip: %s', ip)
-            if family != 'AF_INET':
-                raise NotImplementedError('getsockname only supports '
-                                              'AF_INET')
-            cint.populate_af_inet_sockaddr(pid,
-                                                  addr,
-                                                  port,
-                                                  ip,
-                                                  length_addr,
-                                                  length)
-        else:
-            logging.debug('Got unsuccessful getsockname call')
-        apply_return_conditions(pid, syscall_object)
+    logging.info('Replaying this system call')
+    noop_current_syscall(pid)
+    if syscall_object.ret[0] != -1:
+        logging.debug('Got successful getsockname call')
+        addr = params[1]
+        length_addr = params[2]
+        length = int(syscall_object.args[2].value.strip('[]'))
+        logging.debug('Addr: %d', addr & 0xffffffff)
+        logging.debug('Length addr: %d', length_addr & 0xffffffff)
+        logging.debug('Length: %d', length)
+        sockfields = syscall_object.args[1].value
+        family = sockfields[0].value
+        port = int(sockfields[1].value)
+        ip = sockfields[2].value
+        logging.debug('Family: %s', family)
+        logging.debug('Port: %d', port)
+        logging.debug('Ip: %s', ip)
+        if family != 'AF_INET':
+            raise NotImplementedError('getsockname only supports '
+                                          'AF_INET')
+        cint.populate_af_inet_sockaddr(pid,
+                                       addr,
+                                       port,
+                                       ip,
+                                       length_addr,
+                                       length)
     else:
-        logging.info('Not replaying this system call')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object, params_addr=ecx)
+        logging.debug('Got unsuccessful getsockname call')
+    apply_return_conditions(pid, syscall_object)
 
 
 def getsockname_exit_handler(syscall_id, syscall_object, pid):
@@ -204,12 +212,28 @@ def setsockopt_entry_handler(syscall_id, syscall_object, pid):
         logging.debug('Optval: %s', optval)
         logging.debug('Optval Length: %s', optval_len)
         logging.debug('Optval addr: %x', optval_addr % 0xffffffff)
+        noop_current_syscall(pid)
         logging.debug('Writing values')
         cint.populate_int(pid, optval_addr, optval)
-    apply_return_conditions(pid, syscall_object)
+        apply_return_conditions(pid, syscall_object)
+    else:
+        logging.info('Not replaying this system call')
+        swap_trace_fd_to_execution_fd(pid, 0, syscall_object, params_addr=params)
 
 
 def getsockopt_entry_handler(syscall_id, syscall_object, pid):
+    """Replay Always
+    Checks:
+    0: The socket file descriptor
+    Sets:
+    optval: The value being retrieved
+    optval_len: The length of the value being retrieved
+    return value: 0 (success) or 1 (failure)
+    errno
+
+    Not Implemented:
+    * Use the address validator to check addresses
+    """
     logging.debug('Entering getsockopt handler')
     # Pull out what we can compare
     ecx = cint.peek_register(pid, cint.ECX)
@@ -221,25 +245,19 @@ def getsockopt_entry_handler(syscall_id, syscall_object, pid):
     # This if is sufficient for now for the implemented options
     if params[1] != 1 or params[2] != 4:
         raise NotImplementedError('Unimplemented getsockopt level or optname')
-    if should_replay_based_on_fd(fd_from_trace):
-        logging.info('Replaying this system call')
-        optval_len = int(syscall_object.args[4].value.strip('[]'))
-        if optval_len != 4:
-            raise NotImplementedError('getsockopt() not implemented for '
-                                          'optval sizes other than 4')
-        optval = int(syscall_object.args[3].value.strip('[]'))
-        logging.debug('Optval: %s', optval)
-        logging.debug('Optval Length: %s', optval_len)
-        logging.debug('Optval addr: %x', optval_addr % 0xffffffff)
-        logging.debug('Optval Lenght addr: %d', optval_len_addr % 0xffffffff)
-        noop_current_syscall(pid)
-        logging.debug('Writing values')
-        cint.populate_int(pid, optval_addr, optval)
-        cint.populate_int(pid, optval_len_addr, 4)
-        apply_return_conditions(pid, syscall_object)
-    else:
-        logging.info('Not replaying this system call')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object, params_addr=params)
+    optval_len = int(syscall_object.args[4].value.strip('[]'))
+    if optval_len != 4:
+        raise NotImplementedError('getsockopt() not implemented for '
+                                      'optval sizes other than 4')
+    optval = int(syscall_object.args[3].value.strip('[]'))
+    logging.debug('Optval: %s', optval)
+    logging.debug('Optval Length: %s', optval_len)
+    logging.debug('Optval addr: %x', optval_addr & 0xffffffff)
+    logging.debug('Optval Lenght addr: %d', optval_len_addr & 0xffffffff)
+    noop_current_syscall(pid)
+    cint.populate_int(pid, optval_addr, optval)
+    cint.populate_int(pid, optval_len_addr, 4)
+    apply_return_conditions(pid, syscall_object)
 
 
 def connect_entry_handler(syscall_id, syscall_object, pid):
