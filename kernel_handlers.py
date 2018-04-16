@@ -601,16 +601,31 @@ def prlimit64_entry_handler(syscall_id, syscall_object, pid):
 
 
 def mmap2_entry_handler(syscall_id, syscall_object, pid):
+    """Never replay
+    Checks:
+    0: int fd: the file descriptor being operated on
+    Sets:
+    nothing
+
+    Not Implemented:
+    * Determine if there are special cases we should replay
+
+    """
     logging.debug('Entering mmap2 entry handler')
     validate_integer_argument(pid, syscall_object, 4, 4)
-    trace_fd = int(syscall_object.args[4].value)
-    if trace_fd != -1:
-        swap_trace_fd_to_execution_fd(pid, 4, syscall_object)
-    else:
-        logging.debug('ignoring anonymous mmap2 call')
 
 
 def mmap2_exit_handler(syscall_id, syscall_object, pid):
+    """Never replay
+    Checks:
+    return value: The address of the new memory map
+    Sets:
+    nothing
+
+    Not Implemented:
+    * Determine if there are special cases we should replay
+
+    """
     logging.debug('Entering mmap2 exit handler')
     ret_from_execution = cint.peek_register(pid, cint.EAX)
     ret_from_trace = cleanup_return_value(syscall_object.ret[0])
