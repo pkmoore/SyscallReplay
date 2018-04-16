@@ -612,7 +612,77 @@ def mmap2_entry_handler(syscall_id, syscall_object, pid):
 
     """
     logging.debug('Entering mmap2 entry handler')
+    validate_integer_argument(pid, syscall_object, 1, 1)
     validate_integer_argument(pid, syscall_object, 4, 4)
+    fd = syscall_object.args[4].value
+    if fd != -1:
+        backing_file = '/home/preston/apache2/www/html/index.html'
+        _forge_mmap_with_backing_file(pid, syscall_object, backing_file)
+
+
+def _forge_mmap_with_backing_file(pid, syscall_object, bf):
+    # Preserve the registers mmap uses for parameters
+    map_start_addr = int(syscall_object.ret[0], 16)
+    logging.debug('Map start address: %x', map_start_addr & 0xffffffff)
+    map_size = int(syscall_object.args[1].value)
+    logging.debug('Map size: %d', map_size)
+    prot = cint.peek_register(pid, cint.EDX)
+    # We must make the mapping writable so we can populate it
+    prot = prot | 0x2
+    flags = cint.peek_register(pid, cint.ESI)
+    flags = flags | 0x20 # MAP_ANONYMOUS
+    flags = flags | 0x10 # MAP_FIXED
+    fd = -1
+    offset = 0
+
+    save_EBX  = cint.peek_register(pid, cint.EBX)
+    save_ECX  = cint.peek_register(pid, cint.ECX)
+    save_EDX  = cint.peek_register(pid, cint.EDX)
+    save_ESI  = cint.peek_register(pid, cint.ESI)
+    save_EDI  = cint.peek_register(pid, cint.EDI)
+    save_EBP  = cint.peek_register(pid, cint.EBP)
+
+    _brk_debug_print_regs(pid)
+
+    cint.poke_register_unsigned(pid, cint.EBX, map_start_addr)
+    # How big of a mapping do we want
+    cint.poke_register_unsigned(pid, cint.ECX, map_size)
+    # PROT options
+    cint.poke_register_unsigned(pid, cint.EDX, prot)
+    # Flags options
+    cint.poke_register_unsigned(pid, cint.ESI, flags)
+    # fd
+    cint.poke_register(pid, cint.EDI, fd)
+    # offset
+    cint.poke_register(pid, cint.EBP, offset)
+
+    _brk_debug_print_regs(pid)
+
+    # Advance to our crafted mmap's exit
+    cint.syscall(pid, 0)
+    next_syscall()
+
+    # Copy contents of file into new mapping
+    f = open(bf, 'rb')
+    data = f.read()
+    if len(data) > map_size:
+        raise NotImplementedError('Cannot handle cases where backing file is '
+                                  'larger than mapping!')
+    cint.enable_debug_output(10)
+    cint.copy_bytes_into_child_process(pid, map_start_addr, data)
+    cint.disable_debug_output()
+
+   # restore registers
+    cint.poke_register(pid, cint.EBX, save_EBX)
+    cint.poke_register(pid, cint.ECX, save_ECX)
+    cint.poke_register(pid, cint.EDX, save_EDX)
+    cint.poke_register(pid, cint.ESI, save_ESI)
+    cint.poke_register(pid, cint.EDI, save_EDI)
+    cint.poke_register(pid, cint.EBP, save_EBP)
+
+    # HACK HACK HACK: apply_return_conditions can't handle large addresses
+    cint.poke_register_unsigned(pid, cint.EAX, map_start_addr)
+    cint.entering_syscall = False
 
 
 def mmap2_exit_handler(syscall_id, syscall_object, pid):
