@@ -555,24 +555,18 @@ def write_exit_handler(syscall_id, syscall_object, pid):
 
 def llseek_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering llseek entry handler')
-    if should_replay_based_on_fd(int(syscall_object.args[0].value)):
-        logging.debug('Call using replayed file descriptor. Replaying this '
-                      'system call')
-        noop_current_syscall(pid)
-        if syscall_object.ret[0] != -1:
-            result = int(syscall_object.args[2].value.strip('[]'))
-            result_addr = int(cint.peek_register(pid, cint.ESI))
-            logging.debug('result: %s', result)
-            logging.debug('result_addr: %s', result_addr)
-            logging.debug('Got successful llseek call')
-            logging.debug('Populating result')
-            cint.populate_llseek_result(pid, result_addr, result)
-        else:
-            logging.debug('Got unsucceesful llseek call')
-        apply_return_conditions(pid, syscall_object)
+    noop_current_syscall(pid)
+    if syscall_object.ret[0] != -1:
+        result = int(syscall_object.args[2].value.strip('[]'))
+        result_addr = int(cint.peek_register(pid, cint.ESI))
+        logging.debug('result: %s', result)
+        logging.debug('result_addr: %s', result_addr)
+        logging.debug('Got successful llseek call')
+        logging.debug('Populating result')
+        cint.populate_llseek_result(pid, result_addr, result)
     else:
-        logging.debug('Not replaying this system call')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object)
+        logging.debug('Got unsucceesful llseek call')
+    apply_return_conditions(pid, syscall_object)
 
 
 def llseek_exit_handler(syscall_id, syscall_object, pid):
