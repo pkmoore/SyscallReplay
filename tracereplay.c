@@ -1660,6 +1660,32 @@ static PyObject* syscallreplay_poke_register(PyObject* self, PyObject* args) {
     int reg;
     long int value;
     PyArg_ParseTuple(args, "iii", &child, &reg, &value);
+    if(DEBUG) {
+        printf("C: poke_register: child: %d\n", child);
+        printf("C: poke_register: reg: %d\n", reg);
+        printf("C: poke_register: value: %ld\n", value);
+    }
+    errno = 0;
+    if(ptrace(PTRACE_POKEUSER, child, sizeof(long int) * reg, value) == -1){
+        perror("Register Poke Failed");
+        return NULL;
+    }
+    Py_RETURN_NONE;
+}
+
+static PyObject* syscallreplay_poke_register_unsigned(PyObject* self,
+                                                      PyObject* args) {
+    // unused
+    self = self;
+    pid_t child;
+    int reg;
+    unsigned long int value;
+    PyArg_ParseTuple(args, "III", &child, &reg, &value);
+    if(DEBUG) {
+        printf("C: poke_register: child: %u\n", child);
+        printf("C: poke_register: reg: %u\n", reg);
+        printf("C: poke_register: value: %lu\n", value);
+    }
     errno = 0;
     if(ptrace(PTRACE_POKEUSER, child, sizeof(long int) * reg, value) == -1){
         perror("Register Poke Failed");
@@ -1972,6 +1998,8 @@ static PyMethodDef SyscallReplayMethods[]  = {
       METH_VARARGS, "peek register value"},
     {"poke_register", syscallreplay_poke_register,
      METH_VARARGS, "poke register value"},
+    {"poke_register_unsigned", syscallreplay_poke_register_unsigned,
+     METH_VARARGS, "poke register value (unsigned)"},
     {"write_poll_result", syscallreplay_write_poll_result,
      METH_VARARGS, "write poll result"},
     {"populate_select_bitmaps", syscallreplay_populate_select_bitmaps,
