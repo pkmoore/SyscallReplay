@@ -127,14 +127,14 @@ def _check_flags_and_prot(brks):
         flags_and_prot_ok = True
 
 def _brk_debug_print_regs(pid):
-    logging.debug('ORIG_EAX: %d', cint.peek_register(pid, cint.ORIG_EAX))
-    logging.debug('EAX: %d', cint.peek_register(pid, cint.EAX))
-    logging.debug('EBX: %d', cint.peek_register(pid, cint.EBX))
-    logging.debug('ECX: %d', cint.peek_register(pid, cint.ECX))
-    logging.debug('EDX: %d', cint.peek_register(pid, cint.EDX))
-    logging.debug('ESI: %d', cint.peek_register(pid, cint.ESI))
-    logging.debug('EDI: %d', cint.peek_register(pid, cint.EDI))
-    logging.debug('EBP: %d', cint.peek_register(pid, cint.EBP))
+    print('ORIG_EAX: ', cint.peek_register(pid, cint.ORIG_EAX))
+    print('EAX: ', cint.peek_register(pid, cint.EAX))
+    print('EBX: ', cint.peek_register(pid, cint.EBX))
+    print('ECX: ', cint.peek_register(pid, cint.ECX))
+    print('EDX: ', cint.peek_register(pid, cint.EDX))
+    print('ESI: ', cint.peek_register(pid, cint.ESI))
+    print('EDI: ', cint.peek_register(pid, cint.EDI))
+    print('EBP: ', cint.peek_register(pid, cint.EBP))
 
 def brk_exit_handler(syscall_id, syscall_object, pid):
     """Never Replay.  Only check the return value and WARN if it is
