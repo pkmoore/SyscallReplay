@@ -679,7 +679,7 @@ static PyObject* syscallreplay_copy_bytes_into_child_process(PyObject* self,
     void* addr;
     unsigned char* bytes;
     Py_ssize_t num_bytes;
-    if(!PyArg_ParseTuple(args, "iis#", &child, &addr, &bytes, &num_bytes)) {
+    if(!PyArg_ParseTuple(args, "iIs#", &child, &addr, &bytes, &num_bytes)) {
         PyErr_SetString(SyscallReplayError,
                         "copy_bytes failed parse failed");
     }
@@ -692,7 +692,8 @@ static PyObject* syscallreplay_copy_bytes_into_child_process(PyObject* self,
             printf("%02X ", bytes[i]);
         }
     } 
-        copy_buffer_into_child_process_memory(child, addr, (unsigned char*)bytes, num_bytes);
+    copy_buffer_into_child_process_memory(child, addr, (unsigned char*)bytes, num_bytes);
+
     Py_RETURN_NONE;
 }
 
