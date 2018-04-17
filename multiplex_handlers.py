@@ -220,7 +220,6 @@ def epoll_wait_entry_handler(syscall_id, syscall_object, pid):
         tmp['data'] = data_dict
         events.append(tmp)
         struct_str = struct_str[closing_curl_index+1:]
-    print(events)
     try:
         for i in events:
             if int(i['data']['u32']) != 0xFFFFFFFF & int(i['data']['u64']):
@@ -230,17 +229,14 @@ def epoll_wait_entry_handler(syscall_id, syscall_object, pid):
 
     addr = cint.peek_register(pid, cint.ECX)
     logging.debug('addr: %x', addr)
-    cint.enable_debug_output(10)
     noop_current_syscall(pid)
     for i in events:
-        print('Writing event')
         cint.write_epoll_struct(pid,
                                 addr,
                                 EPOLL_EVENT_TO_NUM[i['event']],
                                 int(i['data']['u64']))
         # sizeof(struct epoll_event)
         addr += 12
-    cint.disable_debug_output()
     apply_return_conditions(pid, syscall_object)
 
 

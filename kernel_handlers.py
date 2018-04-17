@@ -73,7 +73,6 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     save_EDI  = cint.peek_register(pid, cint.EDI)
     save_EBP  = cint.peek_register(pid, cint.EBP)
 
-    _brk_debug_print_regs(pid)
 
     # transform current system call to mmap
     cint.poke_register(pid, cint.ORIG_EAX, 192)
@@ -99,7 +98,6 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     cint.syscall(pid, 0)
     next_syscall()
 
-    _brk_debug_print_regs(pid)
 
    # restore registers
     cint.poke_register(pid, cint.EBX, save_EBX)
@@ -109,7 +107,6 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     cint.poke_register(pid, cint.EDI, save_EDI)
     cint.poke_register(pid, cint.EBP, save_EBP)
 
-    _brk_debug_print_regs(pid)
     apply_return_conditions(pid, syscall_object)
     cint.entering_syscall = False
 
@@ -642,8 +639,6 @@ def _forge_mmap_with_backing_file(pid, syscall_object, bf):
     save_EDI  = cint.peek_register(pid, cint.EDI)
     save_EBP  = cint.peek_register(pid, cint.EBP)
 
-    _brk_debug_print_regs(pid)
-
     cint.poke_register_unsigned(pid, cint.EBX, map_start_addr)
     # How big of a mapping do we want
     cint.poke_register_unsigned(pid, cint.ECX, map_size)
@@ -656,8 +651,6 @@ def _forge_mmap_with_backing_file(pid, syscall_object, bf):
     # offset
     cint.poke_register(pid, cint.EBP, offset)
 
-    _brk_debug_print_regs(pid)
-
     # Advance to our crafted mmap's exit
     cint.syscall(pid, 0)
     next_syscall()
@@ -668,9 +661,7 @@ def _forge_mmap_with_backing_file(pid, syscall_object, bf):
     if len(data) > map_size:
         raise NotImplementedError('Cannot handle cases where backing file is '
                                   'larger than mapping!')
-    cint.enable_debug_output(10)
     cint.copy_bytes_into_child_process(pid, map_start_addr, data)
-    cint.disable_debug_output()
 
    # restore registers
     cint.poke_register(pid, cint.EBX, save_EBX)

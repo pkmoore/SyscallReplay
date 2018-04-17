@@ -123,7 +123,6 @@ def getsockname_entry_handler(syscall_id, syscall_object, pid):
     fd_from_trace = syscall_object.args[0].value
     validate_integer_argument(pid, syscall_object, 0, 0, params=params)
     # Decide if this is a file descriptor we want to deal with
-    logging.info('Replaying this system call')
     noop_current_syscall(pid)
     if syscall_object.ret[0] != -1:
         logging.debug('Got successful getsockname call')
@@ -176,7 +175,6 @@ def shutdown_subcall_entry_handler(syscall_id, syscall_object, pid):
     # TODO: We need to check the 'how' parameter here
     # Check to make sure everything is the same
     # Decide if we want to replay this system call
-    logging.info('Replaying this system call')
     noop_current_syscall(pid)
     apply_return_conditions(pid, syscall_object)
 
@@ -203,7 +201,6 @@ def setsockopt_entry_handler(syscall_id, syscall_object, pid):
     validate_integer_argument(pid, syscall_object, 0, 0, params=params)
     noop_current_syscall(pid)
     if int(syscall_object.ret[0]) != -1:
-        logging.info('Replaying this system call')
         optval_len = int(syscall_object.args[4].value)
         if optval_len != 4:
             raise NotImplementedError('setsockopt() not implemented for '
