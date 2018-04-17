@@ -18,6 +18,7 @@
 #include <time.h>
 #include <sys/utsname.h>
 #include <sys/time.h>
+#include <sys/times.h>
 #include <sys/resource.h>
 #include <termios.h>
 #include <sys/statfs.h>
@@ -526,6 +527,38 @@ static PyObject* syscallreplay_copy_address_range(PyObject* self,
     PyObject* result = Py_BuildValue("s#", buf, size);
     free(buf);
     return result;
+}
+
+static PyObject* syscallreplay_populate_tms_structure(PyObject* self,
+                                                      PyObject* args) {
+    pid_t child;
+    void* addr;
+    clock_t utime;
+    clock_t stime;
+    clock_t cutime;
+    clock_t cstime;
+    if(!PyArg_ParseTuple(args, "IIiiii", &child,  &addr, &utime, &stime,
+                         &cutime, &cstime)) {
+        PyErr_SetString(SyscallReplayError,
+                        "populte_tms_structure arg parse failed");
+    }
+    if(DEBUG) {
+        printf("C: populate_tms: utime: %ld\n", utime);
+        printf("C: populate_tms: stime: %ld\n", stime);
+        printf("C: populate_tms: cutime: %ld\n", cutime);
+        printf("C: populate_tms: cstime: %ld\n", cstime);
+    }
+    struct tms s;
+    s.tms_utime = utime;
+    s.tms_stime = stime;
+    s.tms_cutime = cutime;
+    s.tms_cstime = cstime;
+
+    copy_buffer_into_child_process_memory(child,
+                                          addr,
+                                          (unsigned char*)&s,
+                                          sizeof(s));
+    Py_RETURN_NONE;
 }
 
 static PyObject* syscallreplay_populate_timespec_structure(PyObject* self,
@@ -2030,6 +2063,8 @@ static PyMethodDef SyscallReplayMethods[]  = {
      METH_VARARGS, "populate sendmmsg lengths"},
     {"copy_bytes_into_child_process", syscallreplay_copy_bytes_into_child_process,
      METH_VARARGS, "copy bytes into child process"},
+    {"populate_tms_structure", syscallreplay_populate_tms_structure,
+     METH_VARARGS, "populate tms structure"},
     {"populate_timespec_structure", syscallreplay_populate_timespec_structure,
      METH_VARARGS, "populate timespec structure"},
     {"populate_timer_t_structure", syscallreplay_populate_timer_t_structure,

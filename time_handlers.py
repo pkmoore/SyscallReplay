@@ -256,12 +256,29 @@ def clock_gettime_entry_handler(syscall_id, syscall_object, pid):
 
 
 def times_entry_handler(syscall_id, syscall_object, pid):
+    """Always replay.
+    Checks: nothing
+
+    Sets: contents of the structure passed as a parameter
+    errno
+
+    Returns: clock_t time value or -1 (error)
+    """
+
     logging.debug('Entering times entry handler')
-    if syscall_object.args[0].value != 'NULL':
-        raise NotImplementedError('Calls to times() with an out structure are '
-                                  'not supported')
-    logging.debug('Replaying system call')
     noop_current_syscall(pid)
+    if syscall_object.args[0].value != 'NULL':
+        logging.debug('Got times() call with out structure supplied')
+        addr = cint.peek_register(pid, cint.EBX)
+        utime = int(syscall_object.args[0].value.split('=')[1])
+        logging.debug('utime: %d', utime)
+        stime = int(syscall_object.args[1].value.split('=')[1])
+        logging.debug('stime: %d', stime)
+        cutime = int(syscall_object.args[2].value.split('=')[1])
+        logging.debug('cutime: %d', cutime)
+        cstime = int(syscall_object.args[3].value.split('=')[1].rstrip('}'))
+        logging.debug('cstime: %d', cstime)
+        cint.populate_tms_structure(pid, addr, utime, stime, cutime, cstime)
     apply_return_conditions(pid, syscall_object)
 
 
