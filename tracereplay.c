@@ -1185,7 +1185,7 @@ struct kernel_sigaction {
 };
 
 static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
-		 					  PyObject* args) {
+                                                            PyObject* args) {
   if (DEBUG) {
     printf("C: Entering populate rt_sigaction_struct\n");
   }
@@ -1203,13 +1203,13 @@ static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
   //  void*     old_sa_sigaction = NULL; // use not implemented yet, see kernelhandlers.py
 
   bool argument_population_failed = !PyArg_ParseTuple(args,
-  						      "IIIOII",
-  						      &child,
-    						      &oldact_addr,
-    						      &old_sa_handler,
-						      &mask_sig_list,
-   						      &old_sa_flags,
-						      &old_sa_restorer);
+                                                      "IIIOII",
+                                                      &child,
+                                                      &oldact_addr,
+                                                      &old_sa_handler,
+                                                      &mask_sig_list,
+                                                      &old_sa_flags,
+                                                      &old_sa_restorer);
 
   if (argument_population_failed) {
     PyErr_SetString(SyscallReplayError, "populate rt_sigaction data failed");
@@ -1222,8 +1222,8 @@ static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
     printf("C: populate_sigaction: read arguments: old_sa_flags %d at %p \n", old_sa_flags, &old_sa_mask);
     printf("C: populate_sigaction: read arguments: sa_restorer %p \n",  old_sa_restorer);
    }
-  
-  
+
+
   // setup memory for copying oldact in
     copy_child_process_memory_into_buffer(child, oldact_addr, (unsigned char*)&oldact, sizeof(oldact));
 
@@ -1231,7 +1231,7 @@ static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
   oldact.k_sa_handler = (void*) old_sa_handler;
   oldact.sa_flags = old_sa_flags;
   oldact.sa_restorer = old_sa_restorer;
-  
+
   // create sa_mask sigset_t from mask_sig_list
   sigemptyset(&oldact.sa_mask);
 
@@ -1241,15 +1241,15 @@ static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
     if (!PyInt_Check(next)) {
       PyErr_SetString(SyscallReplayError, "Encountered non-Int in mask list");
     }
-    
+
     int sig = (int)PyInt_AsLong(next);
     sigaddset(&oldact.sa_mask, sig);
-   
+
     if (DEBUG) {
       printf("C: populate rt_sigation: signal %d added to mask \n", sig);
-      printf("C: populate rt_sigaction: Mask: %x \n", &oldact.sa_mask);
+      printf("C: populate rt_sigaction: Mask: %p \n", &oldact.sa_mask);
     }
-    
+
     next = PyIter_Next(iter);
   }
 
@@ -1265,8 +1265,8 @@ static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
      printf("C: Read sigaction: sigaction at %p \n", &test);
      printf("C: Read sigaction: sa_handler %d at %p \n", (int) test.k_sa_handler, &(test.k_sa_handler));
      printf("C: Read sigaction: sa_flags %d at %p \n", test.sa_flags, &(test.sa_flags));
-     printf("C: Read sigaction: sa_mask 0x%x at %p \n", test.sa_mask, &test.sa_mask);     
-     printf("C: Read sigaction: sa_restorer %p at %p \n", test.sa_restorer, &(test.sa_restorer));    
+     printf("C: Read sigaction: sa_mask at %p \n", &test.sa_mask);
+     printf("C: Read sigaction: sa_restorer %p at %p \n", test.sa_restorer, &(test.sa_restorer));
    }
 
   Py_RETURN_NONE;
@@ -1797,8 +1797,7 @@ static PyObject* syscallreplay_attach(PyObject* self, PyObject* args) {
 static PyObject* syscallreplay_detach(PyObject* self, PyObject* args) {
     self = self;
     pid_t child;
-    int status;
-    if(!PyArg_ParseTuple(args, "I", &child) == -1) {
+    if(!PyArg_ParseTuple(args, "I", &child)) {
         PyErr_SetString(SyscallReplayError, "Detach parsetuple failed");
     }
     if(ptrace(PTRACE_DETACH, child, NULL, NULL) == -1) {
