@@ -6,4 +6,4 @@ setup(name='syscallreplay',
       description='Replay a system call trace through an application',
       packages=['syscallreplay'],
       ext_modules=[Extension('syscallreplay',
-                             ['tracereplay.c'])])
+                             ['syscallreplay.c'])])
