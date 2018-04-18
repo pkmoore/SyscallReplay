@@ -42,22 +42,6 @@ def stop_for_debug(pid):
     sys.exit(0)
 
 
-def advance_trace():
-    '''Move the global index that tracks our place in the list of system call
-    objects forward one system call object and return the object it now points
-    to.
-
-    TODO: Fix WTF formatting...
-    '''
-    obj = None
-    if tracereplay.system_call_index < len(
-            tracereplay.system_calls):
-        obj = tracereplay.system_calls[
-            tracereplay.system_call_index]
-    tracereplay.system_call_index += 1
-    return obj
-
-
 def noop_current_syscall(pid):
     ''''No-op' out the current system call the child process is trying to
     execute by replacing it with a call to getpid() (a system call that takes
@@ -120,25 +104,6 @@ def offset_file_descriptor(fd):
     return fd - (len(tracereplay.REPLAY_FILE_DESCRIPTORS) - 3)
 
 
-def peek_bytes(pid, address, num_bytes):
-    '''Peek a num_bytes bytes out of the child process's memory starting at
-    address.
-
-    TODO: THIS IS DEPRECATED. USAGES SHOULD BE REPLACED WITH THE C FUNCTION
-    THAT DOESN'T SUCK SO MUCH
-    '''
-    reads = num_bytes // 4
-    remainder = num_bytes % 4
-    data = ''
-    for i in range(reads):
-        data = data + pack('<i', cint.peek_address(pid, address))
-        address = address + 4
-    if remainder != 0:
-        last_chunk = pack('<i', cint.peek_address(pid, address))
-        data = data + last_chunk[:remainder]
-    return data
-
-
 def peek_string(pid, address):
     '''Peek a null terminated string out of the memory of a chid process.  This
     is a spectacularly bad idea but I've done it all over the place.  This code
@@ -174,7 +139,7 @@ def validate_syscall(syscall_id, syscall_object):
     call object.  This is essentially a fancy dictionary lookup made horrible
     by discrepencies in the way strace names system calls and the way our Linux
     kernel names them.
-    
+
     TODO: reduce the number of hacks for name discrepancies somehow.
     '''
     if syscall_id == 192 and 'mmap' in syscall_object.name:
@@ -226,33 +191,6 @@ def validate_subcall(subcall_id, syscall_object):
                                .format(SOCKET_SUBCALLS[subcall_id][4:],
                                        subcall_id,
                                        syscall_object.name))
-
-
-def write_buffer(pid, address, value, buffer_length):
-    '''This function is an old way of poking a buffer of data into a target
-    address in the child process's memory space.  It is a monstrosity and
-    should be destroyed if it is no longer in use.  If it IS in use, those
-    usages should be replaced by the better functions that exist on the C side
-    of things.
-    (i.e. copy_char_buffer... etc.)
-
-    TODO: Eliminate references, kill this thing with fire
-    '''
-    writes = [value[i:i+4] for i in range(0, len(value), 4)]
-    trailing = len(value) % 4
-    if trailing != 0:
-        left = writes.pop()
-    for i in writes:
-        i = i[::-1]
-        data = int(binascii.hexlify(i), 16)
-        cint.poke_address(pid, address, data)
-        address = address + 4
-    if trailing != 0:
-        address = address
-        data = cint.peek_address(pid, address)
-        d = pack('i', data)
-        d = left + d[len(left):]
-        cint.poke_address(pid, address, unpack('i', d)[0])
 
 
 def cleanup_return_value(val):
@@ -483,7 +421,6 @@ def _except_or_warn(message, except_on_mismatch):
         raise ReplayDeltaError(message)
     else:
         logging.warn(message)
-            
 
 
 def _pos_to_reg(pos):
@@ -493,75 +430,6 @@ def _pos_to_reg(pos):
                   3: cint.ESI,
                   4: cint.EDI}
     return POS_TO_REG[pos]
-
-
-def add_os_fd_mapping(os_fd, trace_fd):
-    logging.debug('Mappings: {}'.format(
-        tracereplay.OS_FILE_DESCRIPTORS))
-    new = {'os_fd': os_fd, 'trace_fd': trace_fd}
-    logging.debug('Adding mapping: {}'.format(new))
-    if len(tracereplay.OS_FILE_DESCRIPTORS) != 0:
-        for i in tracereplay.OS_FILE_DESCRIPTORS:
-            if i['os_fd'] == os_fd and i['trace_fd'] == trace_fd:
-                raise ReplayDeltaError('Mapping ({}) already exists!')
-    tracereplay.OS_FILE_DESCRIPTORS.append(new)
-
-
-def remove_os_fd_mapping(trace_fd):
-    logging.debug('Mappings: {}'.format(
-        tracereplay.OS_FILE_DESCRIPTORS))
-    logging.debug('Removing mapping for tracefd: {}'.format(trace_fd))
-    found = 0
-    index = None
-    for i, item in enumerate(tracereplay.OS_FILE_DESCRIPTORS):
-        if item['trace_fd'] == trace_fd:
-            found = found + 1
-            index = i
-    if found == 0:
-        raise ReplayDeltaError('Tried to remove non-existant mapping')
-    if found > 1:
-        raise ReplayDeltaError('A trace_fd mapped to multiple os_fds')
-    tracereplay.OS_FILE_DESCRIPTORS.pop(index)
-
-
-def fd_pair_for_trace_fd(trace_fd):
-    logging.debug('Looking up trace file descriptor %d', trace_fd)
-    res = [x for x in tracereplay.OS_FILE_DESCRIPTORS
-           if x['trace_fd'] == trace_fd]
-    logging.debug(res)
-    if len(res) > 1:
-        raise RuntimeError('More than one entry for a given trace file '
-                           'descriptor')
-    elif len(res) == 0:
-        logging.debug('Could not find entry for trace file descriptor in list')
-        return None
-    else:
-        return res[0]
-
-
-def swap_trace_fd_to_execution_fd(pid, pos, syscall_object, params_addr=None):
-    POS_TO_REG = {
-        0: cint.EBX,
-        1: cint.ECX,
-        2: cint.EDX,
-        3: cint.ESI,
-        4: cint.EDI,
-    }
-    logging.debug('Cleaning up file descriptor at position: {}'
-                  .format(pos))
-    trace_fd = int(syscall_object.args[pos].value)
-    looked_up_fd = fd_pair_for_trace_fd(trace_fd)['os_fd']
-    if params_addr:
-        params = extract_socketcall_parameters(pid, params_addr, pos+1)
-        execution_fd = params[pos]
-    else:
-        execution_fd = cint.peek_register(pid, POS_TO_REG[pos])
-    logging.debug('Replacing old value (trace fd): {} with new value: {}'
-                  .format(execution_fd, looked_up_fd))
-    if params_addr:
-        update_socketcall_paramater(pid, params_addr, pos, looked_up_fd)
-    else:
-        cint.poke_register(pid, POS_TO_REG[pos], looked_up_fd)
 
 
 def update_socketcall_paramater(pid, params_addr, pos, value):
@@ -581,108 +449,6 @@ def update_socketcall_paramater(pid, params_addr, pos, value):
                                .format(p[pos], value))
 
 
-def should_replay_based_on_fd(trace_fd):
-    logging.debug('Should we replay?')
-    d = fd_pair_for_trace_fd(trace_fd)
-    if d and trace_fd not in tracereplay.REPLAY_FILE_DESCRIPTORS:
-        logging.debug('Call using non-replayed fd, not replaying')
-        logging.debug('Looked up trace_fd: %d', d['trace_fd'])
-        logging.debug('Looked up os_fd: %d', d['os_fd'])
-        logging.debug('We should not replay, there is an os fd for this call '
-                      'and no entry for it in REPLAY_FILE_DESCRIPTORS')
-        return False
-    elif not d and trace_fd in tracereplay.REPLAY_FILE_DESCRIPTORS:
-        logging.debug('This fd %d has no OS_FILE_DESCRIPTORS entry but does '
-                      'exist in REPLAY_FILE_DESCRIPTORS. Should be replayed',
-                      trace_fd)
-        return True
-    elif d and trace_fd in tracereplay.REPLAY_FILE_DESCRIPTORS:
-        raise ReplayDeltaError('This fd ({}) is in both the OS file '
-                               'descriptor list and the replay file '
-                               'descriptor list'.format(trace_fd))
-    else:
-        raise ReplayDeltaError('No entry in either list for fd {}. Maybe this '
-                               'is an improperly handled unsuccessful call?'
-                               .format(trace_fd))
-
-
-def is_file_mmapd_at_any_time(file_name):
-    open_indexes = find_opens_for_file_name(file_name,
-                                            tracereplay.system_calls)
-    logging.debug('Checking open()\'s at the following indexes: {}'
-                  .format(open_indexes))
-    for i in open_indexes:
-        current_segment = tracereplay.system_calls[i:]
-        open_obj = current_segment[0]
-        if open_obj.name != 'open':
-            raise ReplayDeltaError('Current segment did not start with an '
-                                   ' open() call')
-        open_obj_fd = int(open_obj.ret[0])
-        if is_mmapd_before_close(open_obj_fd, current_segment):
-            logging.debug('{} is mmap()\'d after being open()\'d {} calls away'
-                          .format(file_name, i))
-            return True
-    logging.debug('{} is not mmap()\'d by any subsequent opens')
-    return False
-
-
-def find_opens_for_file_name(name, current_segment):
-    logging.debug('Finding open()\'s for {}'.format(name))
-    open_indexes = []
-    for index, obj in enumerate(current_segment):
-        if obj.name == 'open' and cleanup_quotes(obj.args[0].value) == name:
-            open_indexes.append(index)
-    for i in open_indexes:
-        logging.debug('Found an open {} calls away'.format(i))
-    return open_indexes
-
-
-def find_close_for_fd(fd, current_segment):
-    logging.debug('Finding close for file descriptor: %d', fd)
-    close_index = len(current_segment)
-    for index, obj in enumerate(current_segment):
-        if obj.name == 'close' and int(obj.args[0].value) == fd:
-            close_index = index
-            logging.debug('Found close for this open\'s file descriptor %d '
-                          'calls away', close_index)
-            break
-    if not close_index:
-        logging.debug('File descriptor is never closed')
-    return close_index
-
-
-def is_mmapd_before_close(fd, current_segment):
-    close_index = find_close_for_fd(fd, current_segment)
-    if close_index:
-        logging.debug('Looking for mmap2 of fd %d up to %d calls away',
-                      fd, close_index)
-        current_segment = current_segment[:close_index]
-    else:
-        logging.debug('Looking for mmap2 of fd %d before end of segment', fd)
-    for index, obj in enumerate(current_segment):
-        if obj.name == 'mmap2' and int(obj.args[4].value) == fd:
-            logging.debug('Found mmap2 call for fd %d %d calls away',
-                          fd, index)
-            return True
-    logging.debug('This file descriptor is not mmap2\'d before it is closed')
-    return False
-
-
-def add_replay_fd(fd):
-    if fd in tracereplay.REPLAY_FILE_DESCRIPTORS:
-        raise ReplayDeltaError('File descriptor ({}) alread exists in replay '
-                               'file descriptors list'.format(fd))
-    tracereplay.REPLAY_FILE_DESCRIPTORS.append(fd)
-
-
-def remove_replay_fd(fd):
-    if fd not in tracereplay.REPLAY_FILE_DESCRIPTORS:
-        raise ReplayDeltaError('Tried to remove non-existant file descriptor '
-                               '({}) from replay file descriptor lists'
-                               .format(fd))
-    tracereplay.REPLAY_FILE_DESCRIPTORS.remove(fd)
-
-
 def find_arg_matching_string(args, s):
     r = [(x, y.value) for x, y in enumerate(args) if s in y.value]
     if len(r) > 1:
@@ -700,19 +466,6 @@ def get_stack_start_and_end(pid):
                 start = int(addrs[0], 16)
                 end = int(addrs[1], 16)
         return (start, end)
-
-
-def dump_stack(pid, syscall_id, entering):
-    start, end = get_stack_start_and_end(pid)
-    b = cint.copy_address_range(pid, start, end)
-    f = open(str(tracereplay.handled_syscalls) + '-' +
-             SYSCALLS[syscall_id] + '-' +
-             ('entry' if entering else 'exit') + '-' +
-             str(int(time.time())) + '-' +
-             'REPLAY-' +
-             '.bin', 'wb')
-    f.write(b)
-    f.close()
 
 
 def cleanup_quotes(quo):
