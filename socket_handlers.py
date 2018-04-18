@@ -359,14 +359,8 @@ def accept_subcall_entry_handler(syscall_id, syscall_object, pid):
       mess of checking
     """
     logging.debug('Checking if line from trace is interrupted accept')
-    # Hack to fast forward through interrupted accepts
-    while syscall_object.ret[0] == '?':
-        logging.debug('Got interrupted accept. Will advance past')
-        syscall_object = advance_trace()
-        logging.debug('Got new line %s', syscall_object.original_line)
-        if syscall_object.name != 'accept':
-            raise Exception('Attempt to advance past interrupted accept line '
-                            'failed. Next system call was not accept!')
+    if syscall_object.ret[0] == '?':
+        raise NotImplementedError('Interrupted accept()s not implemented')
     ecx = cint.peek_register(pid, cint.ECX)
     params = extract_socketcall_parameters(pid, ecx, 3)
     sockaddr_addr = params[1]
