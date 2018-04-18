@@ -529,6 +529,66 @@ static PyObject* syscallreplay_copy_address_range(PyObject* self,
     return result;
 }
 
+static PyObject* syscallreplay_copy_string(PyObject* self,
+                                           PyObject* args) {
+    pid_t child;
+    void* addr;
+    unsigned char* buf;
+    long int value;
+    size_t search_index;
+    char* value_ptr;
+    bool got_null;
+    PyObject* result;
+    if(!PyArg_ParseTuple(args, "II", &child, &addr)) {
+        PyErr_SetString(SyscallReplayError, "copy_string arg parse failed");
+        Py_RETURN_NONE;
+    }
+    if(DEBUG) {
+        printf("C: copy_string: child: %u\n", child);
+        printf("C: copy_string: addr: %p\n", addr);
+    }
+    search_index = 0;
+    got_null = false;
+    while(true) {
+        errno = 0;
+        value = ptrace(PTRACE_PEEKDATA, child, addr + search_index, NULL);
+        if(errno != 0) {
+            PyErr_SetString(SyscallReplayError,
+                            "copy_string peek_data failed");
+            perror("C: copy_string: copy_string failed");
+            Py_RETURN_NONE;
+        }
+        if(DEBUG) {
+            printf("C: copy_string: got value: %ld\n", value);
+        }
+        value_ptr = (char*)&value;
+        for(size_t i = 0; i < 4; i++) {
+            if(value_ptr[i] == '\0') {
+                got_null = true;
+                search_index += i;
+                if(DEBUG) {
+                    printf("C: copy_string: found null in pos %u\n", i);
+                }
+            }
+        }
+        if(got_null) {
+            break;
+        }
+        search_index += 4;
+    }
+    if(DEBUG) {
+        printf("C: copy_string: search_index: %u\n", search_index);
+    }
+    buf = (unsigned char*)malloc(search_index + 1);
+    copy_child_process_memory_into_buffer(child, addr, buf, search_index+1);
+    if((result = Py_BuildValue("s", buf)) == NULL) {
+        PyErr_SetString(SyscallReplayError,
+                        "copy_string build result failed");
+        Py_RETURN_NONE;
+    }
+    return result;
+}
+
 static PyObject* syscallreplay_populate_tms_structure(PyObject* self,
                                                       PyObject* args) {
     pid_t child;
@@ -2078,6 +2138,8 @@ static PyMethodDef SyscallReplayMethods[]  = {
      METH_VARARGS, "is select fd set"},
     {"copy_address_range", syscallreplay_copy_address_range,
      METH_VARARGS, "copy address range"},
+    {"copy_string", syscallreplay_copy_string,
+     METH_VARARGS, "copy string"},
     {"populate_pipefd_array", syscallreplay_populate_pipefd_array,
      METH_VARARGS, "populate pipefd array"},
     {"get_select_fds", syscallreplay_get_select_fds,

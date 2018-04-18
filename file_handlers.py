@@ -23,18 +23,9 @@ from util import (cleanup_quotes,
                   cint,
                   noop_current_syscall,
                   apply_return_conditions,
-                  should_replay_based_on_fd,
                   cleanup_return_value,
                   validate_integer_argument,
                   find_arg_matching_string,
-                  peek_string,
-                  is_file_mmapd_at_any_time,
-                  swap_trace_fd_to_execution_fd,
-                  add_replay_fd,
-                  add_os_fd_mapping,
-                  remove_replay_fd,
-                  remove_os_fd_mapping,
-                  offset_file_descriptor,
                   string_time_to_int,)
 
 
@@ -742,8 +733,7 @@ def open_entry_handler(syscall_id, syscall_object, pid):
 
     logging.debug('Entering open entry handler')
     ebx = cint.peek_register(pid, cint.EBX)
-    data = peek_string(pid, ebx)
-    fn_from_execution = peek_string(pid, ebx)
+    fn_from_execution = cint.copy_string(pid, ebx)
     fn_from_trace = syscall_object.args[0].value.strip('"')
     logging.debug('Filename from trace: %s', fn_from_trace)
     logging.debug('Filename from execution: %s', fn_from_execution)
@@ -1671,9 +1661,9 @@ def _fcntl_f_getfd_handler(pid, syscall_object):
 
 def open_entry_debug_printer(pid, orig_eax, syscall_object):
     logging.debug('This call tried to open: %s',
-                  peek_string(pid,
-                              cint.peek_register(pid,
-                                                 cint.EBX)))
+                  cint.copy_string(pid,
+                                   cint.peek_register(pid,
+                                                      cint.EBX)))
 
 
 def write_entry_debug_printer(pid, orig_eax, syscall_object):

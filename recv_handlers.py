@@ -2,11 +2,9 @@ from __future__ import print_function
 import logging
 
 from util import(validate_integer_argument,
-                 should_replay_based_on_fd,
                  noop_current_syscall,
                  apply_return_conditions,
                  cint,
-                 swap_trace_fd_to_execution_fd,
                  ReplayDeltaError,
                  extract_socketcall_parameters,
                  cleanup_quotes)

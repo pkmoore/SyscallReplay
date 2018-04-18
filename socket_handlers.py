@@ -9,11 +9,7 @@ from util import (extract_socketcall_parameters,
                   cint,
                   noop_current_syscall,
                   apply_return_conditions,
-                  should_replay_based_on_fd,
-                  validate_integer_argument,
-                  swap_trace_fd_to_execution_fd,
-                  add_os_fd_mapping,
-                  offset_file_descriptor,)
+                  validate_integer_argument,)
 
 def bind_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering bind entry handler')

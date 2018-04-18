@@ -104,22 +104,6 @@ def offset_file_descriptor(fd):
     return fd - (len(tracereplay.REPLAY_FILE_DESCRIPTORS) - 3)
 
 
-def peek_string(pid, address):
-    '''Peek a null terminated string out of the memory of a chid process.  This
-    is a spectacularly bad idea but I've done it all over the place.  This code
-    needs to be replaced with safer code, probably implemented on the C side of
-    things.
-    '''
-    data = ''
-    while True:
-        data = data + pack('<i', cint.peek_address(pid, address))
-        address = address + 4
-        if '\0' in data:
-            while '\0' in data:
-                data = data[:data.rfind('\0')]
-            return data
-
-
 def extract_socketcall_parameters(pid, address, num):
     '''Socket subcall parameters are passed as an array of integers of some
     length pointed to by the address in ECX at the time the socket_subcall
