@@ -169,21 +169,6 @@ def extract_socketcall_parameters(pid, address, num):
     return params
 
 
-def fix_character_literals(string):
-    '''Honesty time:  I don't know why this exists.  Delete it if it is no
-    longer used.
-
-    TODO: EVALUATE FOR DELETION.
-    '''
-    logging.debug('Cleaning up string')
-    string = string.replace('\\n', '\n')
-    string = string.replace('\\r', '\r')
-    string = string.replace('\"', '"')
-    logging.debug('Cleaned up string:')
-    logging.debug(string)
-    return string
-
-
 def validate_syscall(syscall_id, syscall_object):
     '''Validate a system call id to make sure it matches the name in the system
     call object.  This is essentially a fancy dictionary lookup made horrible
