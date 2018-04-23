@@ -320,7 +320,8 @@ def validate_integer_argument(pid,
                               syscall_object,
                               trace_arg,
                               exec_arg,
-                              params=None):
+                              params=None,
+                              except_on_mismatch=True):
     logging.debug('Validating integer argument (trace position: %d '
                   'execution position: %d)',
                   trace_arg,
@@ -341,14 +342,11 @@ def validate_integer_argument(pid,
     # Check to make sure everything is the same
     # Decide if this is a system call we want to replay
     if arg_from_trace != arg:
-        raise ReplayDeltaError('Argument value at trace position: {}, '
-                               'execution position: {} from execution  ({}) '
-                               'differs argument value from trace ({})'
-                               .format(trace_arg,
-                                       exec_arg,
-                                       arg,
-                                       arg_from_trace))
-
+        message = 'Argument value at trace position: {}, ' \
+                  'execution position: {} from execution  ({}) ' \
+                  'differs argument value from trace ({})' \
+                  .format(trace_arg, exec_arg, arg, arg_from_trace)
+        _except_or_warn(message, except_on_mismatch)
 
 def validate_address_argument(pid,
                               syscall_object,
