@@ -1358,7 +1358,7 @@ static PyObject* syscallreplay_populate_stat64_struct(PyObject* self,
     time_t st__atime;
     char buffer[100];
 
-    if(!PyArg_ParseTuple(args, "iiiiKiiiiiKiiKiii", &child, &addr, &st_dev1, &st_dev2,
+    if(!PyArg_ParseTuple(args, "IIiiKiiiiiKiiKiii", &child, &addr, &st_dev1, &st_dev2,
                     &st_blocks,    (int*)&st_nlink,  (int*)&st_gid,
                     (int*)&st_blksize,   (int*)&st_rdev1,  (int*)&st_rdev2,
                     &st_size,      (int*)&st_mode,
@@ -1746,6 +1746,24 @@ static PyObject* syscallreplay_peek_register(PyObject* self, PyObject* args) {
     return Py_BuildValue("i", extracted_register);
 }
 
+static PyObject* syscallreplay_peek_register_unsigned(PyObject* self,
+                                                      PyObject* args) {
+    // unused
+    self = self;
+    pid_t child;
+    int reg;
+    long int extracted_register;
+    PyArg_ParseTuple(args, "Ii", &child, &reg);
+    errno = 0;
+    extracted_register = ptrace(PTRACE_PEEKUSER, child,
+                                sizeof(long int) * reg, NULL);
+    if(errno != 0) {
+        perror("Register Peek Failed");
+        return NULL;
+    }
+    return Py_BuildValue("I", extracted_register);
+}
+
 static PyObject* syscallreplay_poke_register(PyObject* self, PyObject* args) {
     // unused
     self = self;
@@ -2088,6 +2106,8 @@ static PyMethodDef SyscallReplayMethods[]  = {
     {"poke_address", syscallreplay_poke_address, METH_VARARGS, "poke address"},
     {"peek_register", syscallreplay_peek_register,
       METH_VARARGS, "peek register value"},
+    {"peek_register_unsigned", syscallreplay_peek_register_unsigned,
+      METH_VARARGS, "peek register value (unsigned)"},
     {"poke_register", syscallreplay_poke_register,
      METH_VARARGS, "poke register value"},
     {"poke_register_unsigned", syscallreplay_poke_register_unsigned,

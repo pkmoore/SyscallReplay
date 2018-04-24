@@ -881,7 +881,7 @@ def fstat64_entry_handler(syscall_id, syscall_object, pid):
 
 
 def _handle_statlike_call(syscall_id_, syscall_object, pid):
-    buf_addr = cint.peek_register(pid, cint.ECX)
+    buf_addr = cint.peek_register_unsigned(pid, cint.ECX)
     logging.debug('ECX: %x', (buf_addr & 0xffffffff))
     if syscall_object.ret[0] == -1:
         logging.debug('Got unsuccessful fstat64 call')
