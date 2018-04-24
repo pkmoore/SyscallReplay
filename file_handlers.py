@@ -196,9 +196,8 @@ def unlinkat_entry_handler(syscall_id, syscall_object, pid):
 
 def unlink_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering unlink entry handler')
-    name_from_execution = peek_string(pid,
-                                      cint.peek_register(pid,
-                                                         cint.EBX))
+    ebx = cint.peek_register(pid, cint.EBX)
+    name_from_execution = cint.copy_string(pid, ebx)
     name_from_trace = cleanup_quotes(syscall_object.args[0].value)
     logging.debug('Name from execution: %s', name_from_execution)
     logging.debug('Name from trace: %s', name_from_trace)
@@ -207,12 +206,9 @@ def unlink_entry_handler(syscall_id, syscall_object, pid):
                                'name from trace ({})'
                                .format(name_from_execution,
                                        name_from_trace))
-    if is_file_mmapd_at_any_time(name_from_trace):
-        logging.debug('File is mmap\'d at some point. Will not replay')
-    else:
-        logging.debug('Replaying this system call')
-        noop_current_syscall(pid)
-        apply_return_conditions(pid, syscall_object)
+    logging.debug('Replaying this system call')
+    noop_current_syscall(pid)
+    apply_return_conditions(pid, syscall_object)
 
 
 def rename_entry_handler(syscall_id, syscall_object, pid):
