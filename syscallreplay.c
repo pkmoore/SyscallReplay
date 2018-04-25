@@ -1091,14 +1091,14 @@ static PyObject* syscallreplay_populate_char_buffer(PyObject* self,
     pid_t child;
     void* addr;
     unsigned char* data;
-    long int data_length;
-    PyArg_ParseTuple(args, "iis#", (int*)&child, (int*)&addr,
+    int data_length;
+    PyArg_ParseTuple(args, "IIs#", (int*)&child, (int*)&addr,
                      &data, &data_length);
     if(DEBUG) {
         printf("C: pop_char_buf: child: %d\n", child);
         printf("C: pop_char_buf: addr: %x\n", (int)addr);
         printf("C: pop_char_buf: data: %s\n", data);
-        printf("C: pop_char_buf: data_length %ld\n", data_length);
+        printf("C: pop_char_buf: data_length %d\n", data_length);
     }
     copy_buffer_into_child_process_memory(child,
                                           addr,
