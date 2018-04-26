@@ -612,7 +612,10 @@ def mmap2_entry_handler(syscall_id, syscall_object, pid):
     validate_integer_argument(pid, syscall_object, 4, 4)
     fd = syscall_object.args[4].value
     if fd != -1:
-        backing_file = '/home/preston/apache2/www/html/index.html'
+        logging.debug('Got non-anonymous mapping')
+        print(cint.injected_state['config']['mmap_backing_files'])
+        backing_file = cint.injected_state['config']['mmap_backing_files'][str(cint.syscall_index)]
+        logging.debug('Selected backing file: %s', backing_file)
         _forge_mmap_with_backing_file(pid, syscall_object, backing_file)
 
 
