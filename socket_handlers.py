@@ -9,7 +9,8 @@ from util import (extract_socketcall_parameters,
                   cint,
                   noop_current_syscall,
                   apply_return_conditions,
-                  validate_integer_argument,)
+                  validate_integer_argument,
+                  subcall_return_success_handler,)
 
 def bind_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering bind entry handler')
@@ -17,12 +18,8 @@ def bind_entry_handler(syscall_id, syscall_object, pid):
     params = extract_socketcall_parameters(pid, p, 1)
     fd_from_trace = int(syscall_object.args[0].value)
     validate_integer_argument(pid, syscall_object, 0, 0, params=params)
-    if should_replay_based_on_fd(fd_from_trace):
-        logging.debug('Replaying this system call')
-        subcall_return_success_handler(syscall_id, syscall_object, pid)
-    else:
-        logging.debug('Not replaying this call')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object, params_addr=p)
+    logging.debug('Replaying this system call')
+    subcall_return_success_handler(syscall_id, syscall_object, pid)
 
 
 def bind_exit_handler(syscall_id, syscall_object, pid):
