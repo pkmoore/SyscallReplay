@@ -146,6 +146,8 @@ def validate_syscall(syscall_id, syscall_object):
         return
     if syscall_id == 211 and 'getresgid' in syscall_object.name:
         return
+    if syscall_id == 142 and '_newselect' in syscall_object.name:
+        return
     # HACK: Workaround for stat-lstat ambiguity
     if(syscall_object.name == 'stat64' and
        SYSCALLS[syscall_id][4:] == 'lstat64'):
