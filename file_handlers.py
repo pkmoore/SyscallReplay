@@ -1504,20 +1504,16 @@ def getdents64_entry_handler(syscall_id, syscall_object, pid):
                                .format(size, size_from_trace))
 
     fd = int(syscall_object.args[0].value)
-    if should_replay_based_on_fd(fd):
-        logging.debug('Replaying this system call')
-        logging.debug('PID: %d', pid)
-        addr = cint.peek_register(pid, cint.ECX)
-        logging.debug('addr: %x', addr & 0xffffffff)
-        retlen = int(syscall_object.ret[0])
-        data = parse_getdents_structure(syscall_object)
-        if len(data) > 0:
-            cint.populate_getdents64_structure(pid, addr, data, retlen)
-        noop_current_syscall(pid)
-        apply_return_conditions(pid, syscall_object)
-    else:
-        logging.debug('Not replaying this system call')
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object)
+    logging.debug('Replaying this system call')
+    logging.debug('PID: %d', pid)
+    addr = cint.peek_register(pid, cint.ECX)
+    logging.debug('addr: %x', addr & 0xffffffff)
+    retlen = int(syscall_object.ret[0])
+    data = parse_getdents_structure(syscall_object)
+    if len(data) > 0:
+        cint.populate_getdents64_structure(pid, addr, data, retlen)
+    noop_current_syscall(pid)
+    apply_return_conditions(pid, syscall_object)
 
 
 def getdents64_exit_handler(syscall_id, syscall_object, pid):

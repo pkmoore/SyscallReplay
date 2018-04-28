@@ -31,7 +31,7 @@ def parse_getdents_structure(syscall_object):
     for i in entries:
         for j in i:
             s = j.split('=')
-            k = s[0]
+            k = s[0].strip('{}')
             v = s[1]
             tmp_dict[k] = v
         tmp += [tmp_dict]
