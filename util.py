@@ -38,8 +38,10 @@ def string_time_to_int(strtime):
 def stop_for_debug(pid):
     logging.debug('Stopping %d for debug', pid)
     os.kill(pid, signal.SIGSTOP)
+    logging.debug('SIGSTOP sent')
     cint.detach(pid)
-    sys.exit(0)
+    logging.debug('ptrace detached')
+    raw_input()
 
 
 def noop_current_syscall(pid):
