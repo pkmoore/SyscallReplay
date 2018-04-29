@@ -6,6 +6,19 @@ from util import (cint,
                   apply_return_conditions,)
 
 
+def sendfile_entry_handler(syscall_id, syscall_object, pid):
+    logging.debug('Entering sendfile entry handler')
+    validate_integer_argument(pid, syscall_object, 0, 0)
+    validate_integer_argument(pid, syscall_object, 1, 1)
+    validate_integer_argument(pid, syscall_object, 3, 3)
+    offset = syscall_object.args[2].value
+    noop_current_syscall(pid)
+    if offset != 'NULL':
+        offset_addr = cint.peek_register_unsigned(pid, cint.EDX)
+        cint.populate_int(pid, offset_addr, int(offset))
+    apply_return_conditions(pid, syscall_object)
+
+
 def send_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering send entry handler')
     ecx = cint.peek_register(pid, cint.ECX)
