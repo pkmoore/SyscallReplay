@@ -19,8 +19,8 @@ def parse_getdents_structure(syscall_object):
         return []
     left_brace = syscall_object.original_line.find('{')
     right_brace = syscall_object.original_line.rfind('}')
-    line = syscall_object.original_line[left_brace+2:right_brace-1]
-    entries = line.split('} {')
+    line = syscall_object.original_line[left_brace+1:right_brace-1]
+    entries = line.split('}, {')
 
     tmp = []
     for i in entries:
