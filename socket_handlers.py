@@ -193,17 +193,6 @@ def setsockopt_entry_handler(syscall_id, syscall_object, pid):
     # We don't check param[4] because it is an address of an empty length
     validate_integer_argument(pid, syscall_object, 0, 0, params=params)
     noop_current_syscall(pid)
-    if int(syscall_object.ret[0]) != -1:
-        optval_len = int(syscall_object.args[4].value)
-        if optval_len != 4:
-            raise NotImplementedError('setsockopt() not implemented for '
-                                          'optval sizes other than 4')
-        optval = int(syscall_object.args[3].value.strip('[]'))
-        logging.debug('Optval: %s', optval)
-        logging.debug('Optval Length: %s', optval_len)
-        logging.debug('Optval addr: %x', optval_addr % 0xffffffff)
-        logging.debug('Writing values')
-        cint.populate_int(pid, optval_addr, optval)
     apply_return_conditions(pid, syscall_object)
 
 
