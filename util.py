@@ -44,6 +44,13 @@ def stop_for_debug(pid):
     raw_input()
 
 
+def dump_memory_to_file(pid, addr_start, addr_end, filename):
+    with open(filename, 'wb') as f:
+        data = cint.copy_address_range(pid, addr_start, addr_end)
+        f.write(data)
+        f.close()
+
+
 def noop_current_syscall(pid):
     ''''No-op' out the current system call the child process is trying to
     execute by replacing it with a call to getpid() (a system call that takes
