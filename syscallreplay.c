@@ -1959,9 +1959,9 @@ static PyObject* syscallreplay_peek_address(PyObject* self, PyObject* args) {
     // unused
     self = self;
     pid_t child;
-    int address;
+    void* address;
     long int value;
-    PyArg_ParseTuple(args, "ii", &child, &address);
+    PyArg_ParseTuple(args, "II", &child, &address);
     errno = 0;
     value = ptrace(PTRACE_PEEKDATA, child, address, NULL);
     if(errno != 0) {
