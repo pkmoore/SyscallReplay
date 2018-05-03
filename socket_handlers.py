@@ -59,38 +59,34 @@ def getpeername_entry_handler(syscall_id, syscall_object, pid):
                                'does not match file descriptor from trace ({})'
                                .format(fd, fd_from_trace))
     # Decide if this is a file descriptor we want to deal with
-    if fd_from_trace in tracereplay.REPLAY_FILE_DESCRIPTORS:
-        logging.info('Replaying this system call')
-        noop_current_syscall(pid)
-        if syscall_object.ret[0] != -1:
-            logging.debug('Got successful getpeername call')
-            addr = params[1]
-            length_addr = params[2]
-            length = int(syscall_object.args[2].value.strip('[]'))
-            logging.debug('Addr: %d', addr)
-            logging.debug('Length addr: %d', length_addr)
-            logging.debug('Length: %d', length)
-            sockfields = syscall_object.args[1].value
-            family = sockfields[0].value
-            port = int(sockfields[1].value)
-            ip = sockfields[2].value
-            logging.debug('Family: %s', family)
-            logging.debug('Port: %d', port)
-            logging.debug('Ip: %s', ip)
-            if family != 'AF_INET':
-                raise NotImplementedError('getpeername only '
-                                              'supports AF_INET')
-            cint.populate_af_inet_sockaddr(pid,
-                                                  addr,
-                                                  port,
-                                                  ip,
-                                                  length_addr,
-                                                  length)
-        else:
-            logging.debug('Got unsuccessful getpeername call')
-        apply_return_conditions(pid, syscall_object)
+    noop_current_syscall(pid)
+    if syscall_object.ret[0] != -1:
+        logging.debug('Got successful getpeername call')
+        addr = params[1]
+        length_addr = params[2]
+        length = int(syscall_object.args[2].value.strip('[]'))
+        logging.debug('Addr: %d', addr)
+        logging.debug('Length addr: %d', length_addr)
+        logging.debug('Length: %d', length)
+        sockfields = syscall_object.args[1].value
+        family = sockfields[0].value
+        port = int(sockfields[1].value)
+        ip = sockfields[2].value
+        logging.debug('Family: %s', family)
+        logging.debug('Port: %d', port)
+        logging.debug('Ip: %s', ip)
+        if family != 'AF_INET':
+            raise NotImplementedError('getpeername only '
+                                          'supports AF_INET')
+        cint.populate_af_inet_sockaddr(pid,
+                                              addr,
+                                              port,
+                                              ip,
+                                              length_addr,
+                                              length)
     else:
-        logging.info('Not replaying this system call')
+        logging.debug('Got unsuccessful getpeername call')
+    apply_return_conditions(pid, syscall_object)
 
 
 def getsockname_entry_handler(syscall_id, syscall_object, pid):
