@@ -879,11 +879,12 @@ def fstat64_entry_handler(syscall_id, syscall_object, pid):
 
 def _handle_statlike_call(syscall_id_, syscall_object, pid):
     buf_addr = cint.peek_register_unsigned(pid, cint.ECX)
-    logging.debug('ECX: %x', (buf_addr & 0xffffffff))
+    logging.debug('ECX: %x', buf_addr)
     if syscall_object.ret[0] == -1:
-        logging.debug('Got unsuccessful fstat64 call')
+        logging.debug('Got unsuccessful stat-like call')
     else:
-        logging.debug('Got successful fstat64 call')
+        logging.debug('Got successful stat-like call')
+        noop_current_syscall(pid)
         # There should always be an st_dev
         idx, arg = find_arg_matching_string(syscall_object.args[1:],
                                             'st_dev')[0]
@@ -991,25 +992,26 @@ def _handle_statlike_call(syscall_id_, syscall_object, pid):
         logging.debug('st_ctime: %d', st_ctime)
 
         logging.debug('pid: %d', pid)
-        logging.debug('addr: %d', buf_addr)
+        logging.debug('addr: %x', buf_addr)
+        cint.enable_debug_output(10)
         cint.populate_stat64_struct(pid,
                                     buf_addr,
                                     int(st_dev1),
                                     int(st_dev2),
-                                    st_blocks,
+                                    st_ino,
+                                    st_mode,
                                     st_nlink,
+                                    st_uid,
                                     st_gid,
-                                    st_blksize,
                                     int(st_rdev1),
                                     int(st_rdev2),
                                     st_size,
-                                    st_mode,
-                                    st_uid,
-                                    st_ino,
-                                    st_ctime,
+                                    st_blksize,
+                                    st_blocks,
+                                    st_atime,
                                     st_mtime,
-                                    st_atime)
-    noop_current_syscall(pid)
+                                    st_ctime)
+        cint.disable_debug_output()
     apply_return_conditions(pid, syscall_object)
 
 
