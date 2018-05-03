@@ -1553,6 +1553,8 @@ def writev_entry_debug_printer(pid, orig_eax, syscall_object):
 def fstat64_entry_debug_printer(pid, orig_eax, syscall_object):
     logging.debug('This call tried to fstat: %s',
                   cint.peek_register(pid, cint.EBX))
+    logging.debug('Buffer address: %x',
+                  cint.peek_register_unsigned(pid, cint.ECX))
 
 
 def close_entry_debug_printer(pid, orig_eax, syscall_object):
