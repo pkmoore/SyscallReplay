@@ -1332,38 +1332,73 @@ static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
   Py_RETURN_NONE;
 }
 
+struct kstat64 {
+    unsigned long long st_dev;
+    unsigned char __pad0[4];
+    unsigned long st_ino;
+    unsigned int st_mode;
+    unsigned int st_nlink;
+    unsigned long st_uid;
+    unsigned long st_gid;
+    unsigned long long  st_rdev;
+    unsigned char __pad3[4];
+    long long st_size;
+    unsigned long st_blksize;
+    unsigned long long st_blocks;
+    unsigned long st__atime;
+    unsigned long st__atime_nsec;
+    unsigned long st__mtime;
+    unsigned int st__mtime_nsec;
+    unsigned long st__ctime;
+    unsigned long st__ctime_nsec;
+};
+
 static PyObject* syscallreplay_populate_stat64_struct(PyObject* self,
                                                     PyObject* args) {
     // unused
     self = self;
-    struct stat64 s;
     pid_t child;
     void* addr;
-    int st_dev1;
-    int st_dev2;
-    int st_rdev1;
-    int st_rdev2;
-    dev_t     st_dev;     /*  8 ID of device containing file */
-    ino_t     st_ino;     /* 8 inode number */
-    mode_t    st_mode;    /* 4 protection */
-    nlink_t   st_nlink;   /* 4 number of hard links */
-    uid_t     st_uid;     /* 4 user ID of owner */
-    gid_t     st_gid;     /* 4 group ID of owner */
-    dev_t     st_rdev;    /* 8 device ID (if special file) */
-    off_t     st_size;    /* 8 total size, in bytes */
-    blksize_t st_blksize; /* 4 blocksize for file system I/O */
-    blkcnt_t  st_blocks;  /* 8 number of 512B blocks allocated */
-    time_t st__ctime;
-    time_t st__mtime;
-    time_t st__atime;
+    uint32_t st_dev1;
+    uint32_t st_dev2;
+    unsigned long long  st_dev;     /*  8 ID of device containing file */
+    unsigned long       st_ino;     /* 8 inode number */
+    unsigned long       st_mode;    /* 4 protection */
+    unsigned int        st_nlink;   /* 4 number of hard links */
+    unsigned long       st_uid;     /* 4 user ID of owner */
+    unsigned long       st_gid;     /* 4 group ID of owner */
+    uint32_t st_rdev1;
+    uint32_t st_rdev2;
+    unsigned long long  st_rdev;    /* 8 device ID (if special file) */
+    long long           st_size;    /* 8 total size, in bytes */
+    unsigned long       st_blksize; /* 4 blocksize for file system I/O */
+    unsigned long long  st_blocks;  /* 8 number of 512B blocks allocated */
+    unsigned long       st__atime;
+    unsigned long       st__mtime;
+    unsigned long       st__ctime;
+
+    struct kstat64 s;
+
     char buffer[100];
 
-    if(!PyArg_ParseTuple(args, "IIiiKiiiiiKiiKiii", &child, &addr, &st_dev1, &st_dev2,
-                    &st_blocks,    (int*)&st_nlink,  (int*)&st_gid,
-                    (int*)&st_blksize,   (int*)&st_rdev1,  (int*)&st_rdev2,
-                    &st_size,      (int*)&st_mode,
-                    (int*)&st_uid,       &st_ino,    (int*)&st__ctime,
-                    (int*)&st__mtime,    (int*)&st__atime)) {
+    if(!PyArg_ParseTuple(args, "IIIIkkIkkIILkKkkk",
+                         &child,
+                         &addr,
+                         &st_dev1,
+                         &st_dev2,
+                         &st_ino,
+                         &st_mode,
+                         &st_nlink,
+                         &st_uid,
+                         &st_gid,
+                         &st_rdev1,
+                         &st_rdev2,
+                         &st_size,
+                         &st_blksize,
+                         &st_blocks,
+                         &st__atime,
+                         &st__mtime,
+                         &st__ctime)) {
         PyErr_SetString(SyscallReplayError,
                         "populate_stat64_struct arg parse fialed");
     }
@@ -1372,78 +1407,65 @@ static PyObject* syscallreplay_populate_stat64_struct(PyObject* self,
         printf("C: populate_stat64: addr %p\n", addr);
         printf("C: populate_stat64: s %p\n", &s);
         printf("C: populate_stat64: sizeof(s) %d\n", sizeof(s));
+        printf("C: populate_stat64: st_mode %lu\n", st_mode);
     }
     st_dev = makedev(st_dev1, st_dev2);
     st_rdev = makedev(st_rdev1, st_rdev2);
 
-    copy_child_process_memory_into_buffer(child, addr, (unsigned char*)&s, sizeof(s));
     s.st_dev = st_dev;
+    memset(&s.__pad0, 0, sizeof(s.__pad0));
     s.st_ino = st_ino;
     s.st_mode = st_mode;
     s.st_nlink = st_nlink;
     s.st_uid = st_uid;
     s.st_gid = st_gid;
     s.st_rdev = st_rdev;
+    memset(&s.__pad3, 0, sizeof(s.__pad3));
     s.st_size = st_size;
     s.st_blksize = st_blksize;
     s.st_blocks = st_blocks;
-    s.st_ctime = st__ctime;
-    s.st_ctim.tv_nsec = 0;
-    s.st_mtime = st__mtime;
-    s.st_mtim.tv_nsec = 0;
-    s.st_atime = st__atime;
-    s.st_atim.tv_nsec = 0;
-
+    s.st__atime = st__atime;
+    s.st__atime_nsec = 0;
+    s.st__mtime = st__mtime;
+    s.st__mtime_nsec = 0;
+    s.st__ctime = st__ctime;
+    s.st__ctime_nsec = 0;
 
     if(DEBUG) {
-        printf("sizeof(st.st_dev): %d\n", sizeof(s.st_dev));
+        printf("REG: %d\n", S_ISREG(s.st_mode));
+        printf("REG2: %d\n", S_ISREG(33188));
+        printf("sizeof(st.dev): %d\n", sizeof(s.st_dev));
         printf("s.st_dev: %llu\n", s.st_dev);
         printf("sizeof(s.st_rdev): %d\n", sizeof(s.st_rdev));
         printf("s.st_rdev: %llu\n", s.st_rdev);
         printf("sizeof(s.st_ino): %d\n", sizeof(s.st_ino));
-        printf("s.st_ino: %llu\n", s.st_ino);
+        printf("s.st_ino: %lu\n", s.st_ino);
         printf("sizeof(s.st_mode): %d\n", sizeof(s.st_mode));
         printf("s.st_mode: %d\n", s.st_mode);
         printf("sizeof(s.st_nlink): %d\n", sizeof(s.st_nlink));
         printf("s.st_nlink: %d\n", s.st_nlink);
         printf("sizeof(s.st_uid): %d\n", sizeof(s.st_uid));
-        printf("s.st_uid: %d\n", s.st_uid);
+        printf("s.st_uid: %lu\n", s.st_uid);
         printf("sizeof(s.st_gid): %d\n", sizeof(s.st_gid));
-        printf("s.st_gid: %d\n", s.st_gid);
+        printf("s.st_gid: %lu\n", s.st_gid);
         printf("sizeof(s.st_size): %d\n", sizeof(s.st_size));
         printf("s.st_size: %llu\n", s.st_size);
         printf("sizeof(s.st_blksize): %d\n", sizeof(s.st_blksize));
-        printf("s.st_blksize: %ld\n", s.st_blksize);
+        printf("s.st_blksize: %lu\n", s.st_blksize);
         printf("sizeof(s.st_blocks): %d\n", sizeof(s.st_blocks));
         printf("s.st_blocks: %llu\n", s.st_blocks);
 
-        strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime(&s.st_ctime));
+        strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime(&s.st__ctime));
         printf("s.st_ctime: %s\n", buffer);
-        strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime(&s.st_mtime));
+        strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime(&s.st__mtime));
         printf("s.st_mtime: %s\n", buffer);
-        strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime(&s.st_atime));
+        strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime(&s.st__atime));
         printf("s.st_atime: %s\n", buffer);
     }
-    
     copy_buffer_into_child_process_memory(child,
                                           addr,
                                           (unsigned char*)&s,
                                           sizeof(s));
-    if(DEBUG) {
-        struct stat64 r;
-        copy_child_process_memory_into_buffer(child, addr,
-                                              (unsigned char*)&r, sizeof(r));
-            strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime(&r.st_ctime));
-            printf("r.st_ctime: %s\n", buffer);
-            strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime(&r.st_mtime));
-            printf("r.st_mtime: %s\n", buffer);
-            strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime(&r.st_atime));
-            printf("r.st_atime: %s\n", buffer);
-            printf("!!!!!!\n");
-            printf("r.st_ctime: %lld\n", (long long)r.st_ctime);
-            printf("r.st_mtime: %lld\n", (long long)r.st_mtime);
-            printf("r.st_atime: %lld\n", (long long)r.st_atime);
-    }
     Py_RETURN_NONE;
 }
 
