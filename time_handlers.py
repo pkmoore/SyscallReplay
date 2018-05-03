@@ -1,4 +1,5 @@
 import logging
+import time
 from util import *
 
 
@@ -166,12 +167,16 @@ def gettimeofday_forger(pid):
                     for x in cint.injected_state['gettimeofdays']]
     microseconds_times = [x['microseconds']
                          for x in cint.injected_state['gettimeofdays']]
-    seconds_delta = _get_avg_time_result_delta(seconds_times)
-    microseconds_delta = _get_avg_time_result_delta(microseconds_times)
-    last_seconds = cint.injected_state['gettimeofdays'][-1]['seconds']
-    last_microseconds = cint.injected_state['gettimeofdays'][-1]['microseconds']
-    seconds = last_seconds + seconds_delta
-    microseconds = last_microseconds + microseconds_delta
+    if len(seconds_times) != 0 and len(microseconds_times) != 0:
+        seconds_delta = _get_avg_time_result_delta(seconds_times)
+        microseconds_delta = _get_avg_time_result_delta(microseconds_times)
+        last_seconds = cint.injected_state['gettimeofdays'][-1]['seconds']
+        last_microseconds = cint.injected_state['gettimeofdays'][-1]['microseconds']
+        seconds = last_seconds + seconds_delta
+        microseconds = last_microseconds + microseconds_delta
+    else:
+        seconds = int(time.time())
+        microseconds = 0
     cint.injected_state['gettimeofdays'].append({'seconds': seconds,
                                                  'microseconds': microseconds})
     logging.debug('Using seconds: %d microseconds: %d', seconds, microseconds)
