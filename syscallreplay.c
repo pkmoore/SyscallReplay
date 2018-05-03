@@ -1971,6 +1971,22 @@ static PyObject* syscallreplay_peek_address(PyObject* self, PyObject* args) {
     return Py_BuildValue("i", value);
 }
 
+static PyObject* syscallreplay_peek_address_unsigned(PyObject* self, PyObject* args) {
+    // unused
+    self = self;
+    pid_t child;
+    void* address;
+    long int value;
+    PyArg_ParseTuple(args, "II", &child, &address);
+    errno = 0;
+    value = ptrace(PTRACE_PEEKDATA, child, address, NULL);
+    if(errno != 0) {
+        perror("Peek into userspace failed");
+        PyErr_SetString(SyscallReplayError, "peek_address peek failed");
+    }
+    return Py_BuildValue("I", value);
+}
+
 static PyObject* syscallreplay_write_poll_result(PyObject* self, PyObject* args) {
     // unused
     self = self;
@@ -2125,6 +2141,8 @@ static PyMethodDef SyscallReplayMethods[]  = {
     {"sigcont", syscallreplay_sigcont, METH_VARARGS, "send SIGCONT to pid"},
     {"waitpid", syscallreplay_waitpid, METH_VARARGS, "wait on a pid"},
     {"peek_address", syscallreplay_peek_address, METH_VARARGS, "peek address"},
+    {"peek_address_unsigned", syscallreplay_peek_address_unsigned,
+      METH_VARARGS, "peek address"},
     {"poke_address", syscallreplay_poke_address, METH_VARARGS, "poke address"},
     {"peek_register", syscallreplay_peek_register,
       METH_VARARGS, "peek register value"},
