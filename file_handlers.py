@@ -735,7 +735,7 @@ def open_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Filename from trace: %s', fn_from_trace)
     logging.debug('Filename from execution: %s', fn_from_execution)
     if fn_from_execution != fn_from_trace:
-        raise Exception('File name from execution ({}) differs from '
+        raise ReplayDeltaError('File name from execution ({}) differs from '
                         'file name from trace ({})'.format(fn_from_execution,
                                                            fn_from_trace))
     fd_from_trace = int(syscall_object.ret[0])
