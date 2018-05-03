@@ -1196,6 +1196,13 @@ def stat64_entry_handler(syscall_id, syscall_object, pid):
     """
 
     logging.debug('Entering stat64 handler')
+    filename_from_execution = cint.copy_string(pid, cint.peek_register(pid, cint.EBX))
+    filename_from_trace = cleanup_quotes(syscall_object.args[0].value)
+    if filename_from_execution != filename_from_trace:
+        raise ReplayDeltaError('Filename from execution {} does not match '
+                               'filename from trace {}'
+                               .format(filename_from_execution,
+                                       filename_from_trace))
     _handle_statlike_call(syscall_id, syscall_object, pid)
 
 
