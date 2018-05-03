@@ -1536,6 +1536,20 @@ def write_entry_debug_printer(pid, orig_eax, syscall_object):
     logging.debug('File descriptor: %d', fd)
 
 
+def writev_entry_debug_printer(pid, orig_eax, syscall_object):
+    iovs = cint.peek_register_unsigned(pid, cint.ECX)
+    count = cint.peek_register(pid, cint.EDX)
+    logging.debug('iovs: %x', iovs)
+    logging.debug('count: %d', count)
+    for i in range(count):
+        iov_addr = cint.peek_address_unsigned(pid, iovs)
+        iov_len = cint.peek_address_unsigned(pid, iovs+4)
+        logging.debug('iov_addr: %x', iov_addr)
+        logging.debug('iov_len: %d', iov_len)
+        logging.debug('%s', cint.copy_address_range(pid, iov_addr, iov_addr + iov_len))
+        iovs += 8
+
+
 def fstat64_entry_debug_printer(pid, orig_eax, syscall_object):
     logging.debug('This call tried to fstat: %s',
                   cint.peek_register(pid, cint.EBX))
