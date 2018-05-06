@@ -290,40 +290,36 @@ def times_entry_handler(syscall_id, syscall_object, pid):
 def utimensat_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering utimensat entry handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
-    if should_replay_based_on_fd(int(syscall_object.args[0].value)):
-        noop_current_syscall(pid)
-        logging.debug('Replaying this system call')
-        timespec0_addr = cint.peek_register(pid, cint.EDX)
-        timespec1_addr = timespec0_addr + 4
-        logging.debug('Timespec 0 addr: %d', timespec0_addr)
-        logging.debug('Timespec 1 addr: %d', timespec1_addr)
-        timespec0_seconds = syscall_object.args[2].value
-        timespec0_seconds = int(timespec0_seconds.strip('{}'))
-        timespec0_nseconds = syscall_object.args[3].value[0]
-        timespec0_nseconds = int(timespec0_nseconds.rstrip('}'))
-        logging.debug('Timespec0 seconds: %d nseconds: %d',
-                      timespec0_seconds,
-                      timespec0_nseconds)
-        timespec1_seconds = syscall_object.args[4].value
-        timespec1_seconds = int(timespec1_seconds.strip('{}'))
-        timespec1_nseconds = syscall_object.args[5].value
-        timespec1_nseconds = int(timespec1_nseconds.rstrip('}'))
-        logging.debug('Timespec1 seconds: %d nseconds: %d',
-                      timespec1_seconds,
-                      timespec1_nseconds)
-        cint.populate_timespec_structure(pid,
-                                                timespec0_addr,
-                                                timespec0_seconds,
-                                                timespec0_nseconds)
-        cint.populate_timespec_structure(pid,
-                                                timespec1_addr,
-                                                timespec1_seconds,
-                                                timespec1_nseconds)
-        apply_return_conditions(pid, syscall_object)
-    else:
-        swap_trace_fd_to_execution_fd(pid, 0, syscall_object)
-        logging.debug('Not replaying this system call')
-
+    noop_current_syscall(pid)
+    logging.debug('Replaying this system call')
+    timespec0_addr = cint.peek_register_unsigned(pid, cint.EDX)
+    timespec1_addr = timespec0_addr + 8
+    logging.debug('Timespec 0 addr: %x', timespec0_addr)
+    logging.debug('Timespec 1 addr: %x', timespec1_addr)
+    timespec0_seconds = syscall_object.args[2].value
+    timespec0_seconds = int(timespec0_seconds.strip('[]{}'))
+    timespec0_nseconds = syscall_object.args[3].value[0]
+    timespec0_nseconds = int(timespec0_nseconds.rstrip('[]{}'))
+    logging.debug('Timespec0 seconds: %d nseconds: %d',
+                  timespec0_seconds,
+                  timespec0_nseconds)
+    timespec1_seconds = syscall_object.args[4].value
+    timespec1_seconds = int(timespec1_seconds.strip('[]{}'))
+    timespec1_nseconds = syscall_object.args[5].value
+    timespec1_nseconds = int(timespec1_nseconds.rstrip('[]{}'))
+    logging.debug('Timespec1 seconds: %d nseconds: %d',
+                  timespec1_seconds,
+                  timespec1_nseconds)
+    cint.enable_debug_output(10)
+    cint.populate_timespec_structure(pid,
+                                     timespec0_addr,
+                                     timespec0_seconds,
+                                     timespec0_nseconds)
+    cint.populate_timespec_structure(pid,
+                                     timespec1_addr,
+                                     timespec1_seconds,
+                                     timespec1_nseconds)
+    apply_return_conditions(pid, syscall_object)
 
 
 def time_entry_debug_printer(pid, orig_eax, syscall_object):

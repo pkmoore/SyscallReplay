@@ -33,6 +33,11 @@
 #include <inttypes.h>
 #include <sys/epoll.h>
 
+struct ktimespec {
+    unsigned long tv_sec;
+    long int tv_nsec;
+};
+
 static PyObject* SyscallReplayError;
 
 bool DEBUG = false;
@@ -627,25 +632,25 @@ static PyObject* syscallreplay_populate_timespec_structure(PyObject* self,
     self = self;
     pid_t child;
     void* addr;
-    time_t seconds;
-    long nanoseconds;
-    if(!PyArg_ParseTuple(args, "iiil", &child, &addr, &seconds, &nanoseconds)) {
+    unsigned long seconds;
+    long int nanoseconds;
+    if(!PyArg_ParseTuple(args, "IIkl", &child, &addr, &seconds, &nanoseconds)) {
         PyErr_SetString(SyscallReplayError,
                         "copy_bytes failed parse failed");
     }
     if(DEBUG) {
         printf("C: timespec: child: %d\n", child);
         printf("C: timespec: addr: %p\n", addr);
-        printf("C: timespec: seconds: %d\n", (int)seconds);
+        printf("C: timespec: seconds: %u\n", seconds);
         printf("C: timespec: nanoseconds: %ld\n", nanoseconds);
         printf("C: timespec: sizeof(seconds): %d\n", sizeof(seconds));
         printf("C: timespec: sizeof(nanoseconds): %d\n", sizeof(nanoseconds));
     }
-    struct timespec t;
+    struct ktimespec t;
     t.tv_sec = seconds;
     t.tv_nsec = nanoseconds;
     if(DEBUG) {
-        printf("C: timespec: tv_sec: %d\n", (int)t.tv_sec);
+        printf("C: timespec: tv_sec: %u\n", t.tv_sec);
         printf("C: timespec: tv_nsec: %ld\n", t.tv_nsec);
     }
     copy_buffer_into_child_process_memory(child, addr, (unsigned char*)&t, sizeof(t));
