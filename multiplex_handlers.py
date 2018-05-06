@@ -8,23 +8,7 @@ from poll_parser import (
     parse_poll_input,
 )
 
-from os_dict import EPOLL_EVENT_TO_NUM
 
-
-# A lot of the parsing in this function needs to be moved into the
-# posix-omni-parser codebase. there really needs to be an "ARRAY OF FILE
-# DESCRIPTORS" parsing class.
-
-# Right now, all calls to select will be replayed. We do this because this
-# covers all of the real-world examples encountered thus far (i.e. we have not
-# seen a select call that operated entirely on "real" file descriptors. If
-# even one file descriptor is replayed we must replay the select call.
-
-# The only issue that might pop up is a case where the file descriptor returned
-# as "ready" maps to a real file descriptor that is not "ready" for a
-# non-blocking call. In this case, the real call (that we allow through) would
-# return EWOULDBLOCK or something like that which would result in a replay
-# delta.
 def select_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering select entry handler')
     while syscall_object.ret[0] == '?':
@@ -39,18 +23,18 @@ def select_entry_handler(syscall_id, syscall_object, pid):
     seconds = 0
     microseconds = 0
     if syscall_object.args[4].value != 'NULL':
-        timeval_addr = cint.peek_register(pid, cint.EDI)
+        timeval_addr = cint.peek_register_unsigned(pid, cint.EDI)
         logging.debug('timeval_addr: %d')
         seconds = int(syscall_object.args[4].value.strip('{}'))
         microseconds = int(syscall_object.args[5].value.strip('{}'))
         logging.debug('seconds: %d', seconds)
         logging.debug('microseconds: %d', microseconds)
-    readfds_addr = cint.peek_register(pid, cint.ECX)
-    logging.debug('readfds addr: %x', readfds_addr & 0xFFFFFFFF)
-    writefds_addr = cint.peek_register(pid, cint.EDX)
-    logging.debug('writefds addr: %x', writefds_addr & 0xFFFFFFFF)
-    exceptfds_addr = cint.peek_register(pid, cint.ESI)
-    logging.debug('exceptfds addr: %x', exceptfds_addr & 0xFFFFFFFF)
+    readfds_addr = cint.peek_register_unsigned(pid, cint.ECX)
+    logging.debug('readfds addr: %x', readfds_addr)
+    writefds_addr = cint.peek_register_unsigned(pid, cint.EDX)
+    logging.debug('writefds addr: %x', writefds_addr)
+    exceptfds_addr = cint.peek_register_unsigned(pid, cint.ESI)
+    logging.debug('exceptfds addr: %x', exceptfds_addr)
     readfds = []
     writefds = []
     exceptfds = []
@@ -83,8 +67,8 @@ def select_entry_handler(syscall_id, syscall_object, pid):
                                  writefds,
                                  exceptfds_addr,
                                  exceptfds)
-    logging.debug('Populating timeval structure')
     if timeval_addr:
+        logging.debug('Populating timeval structure')
         cint.populate_timeval_structure(pid,
                                         timeval_addr,
                                         seconds,

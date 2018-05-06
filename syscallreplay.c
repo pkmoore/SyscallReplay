@@ -1514,7 +1514,7 @@ static PyObject* syscallreplay_populate_select_bitmaps(PyObject* self,
     void* exceptfds_addr;
     PyObject* exceptfds_list;
 
-    PyArg_ParseTuple(args, "iiOiOiO",
+    PyArg_ParseTuple(args, "IIOIOIO",
                      &child,
                      &readfds_addr,
                      &readfds_list,
@@ -1522,13 +1522,15 @@ static PyObject* syscallreplay_populate_select_bitmaps(PyObject* self,
                      &writefds_list,
                      &exceptfds_addr,
                      &exceptfds_list);
+    fd_set tmp;
     if(DEBUG) {
         printf("C: Select: child: %d\n", child);
         printf("C: Select: readfds_addr: %p\n", readfds_addr);
         printf("C: Select: write_addr: %p\n", writefds_addr);
         printf("C: Select: exceptfds_addr: %p\n", exceptfds_addr);
+        printf("C: Select: ================\n");
+        printf("C: Select: sizeof(tmp): %u\n", sizeof(tmp));
     }
-    fd_set tmp;
     PyObject* next;
     size_t fd;
     if(!PyList_Check(readfds_list)) {
