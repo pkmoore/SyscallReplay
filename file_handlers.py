@@ -880,11 +880,11 @@ def fstat64_entry_handler(syscall_id, syscall_object, pid):
 def _handle_statlike_call(syscall_id_, syscall_object, pid):
     buf_addr = cint.peek_register_unsigned(pid, cint.ECX)
     logging.debug('ECX: %x', buf_addr)
+    noop_current_syscall(pid)
     if syscall_object.ret[0] == -1:
         logging.debug('Got unsuccessful stat-like call')
     else:
         logging.debug('Got successful stat-like call')
-        noop_current_syscall(pid)
         # There should always be an st_dev
         idx, arg = find_arg_matching_string(syscall_object.args[1:],
                                             'st_dev')[0]
