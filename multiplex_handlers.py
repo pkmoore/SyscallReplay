@@ -24,7 +24,7 @@ def select_entry_handler(syscall_id, syscall_object, pid):
     microseconds = 0
     if syscall_object.args[4].value != 'NULL':
         timeval_addr = cint.peek_register_unsigned(pid, cint.EDI)
-        logging.debug('timeval_addr: %d')
+        logging.debug('timeval_addr: %x', timeval_addr)
         seconds = int(syscall_object.args[4].value.strip('{}'))
         microseconds = int(syscall_object.args[5].value.strip('{}'))
         logging.debug('seconds: %d', seconds)
