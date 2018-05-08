@@ -223,6 +223,19 @@ def gettimeofday_entry_handler(syscall_id, syscall_object, pid):
         apply_return_conditions(pid, syscall_object)
 
 
+def clock_gettime_forger(pid):
+    logging.debug('Entering clock_gettime_forger')
+    clock_type = cint.peek_register_unsigned(pid, cint.EBX)
+    timespec_addr = cint.peek_register_unsigned(pid, cint.ECX)
+    if clock_type != 1:
+        raise NotImplementedError('Cannot forge non-CLOCK_MONOTONIC calls')
+    seconds = cint.injected_state['clock_gettimes'][-1]['seconds'] + 1
+    nanoseconds = cint.injected_state['clock_gettimes'][-1]['nanoseconds']
+    logging.debug('Seconds: %d', seconds)
+    logging.debug('Nanoseconds: %d', nanoseconds)
+    noop_current_syscall(pid)
+    cint.populate_timespec_structure(pid, timespec_addr, seconds, nanoseconds)
+    cint.syscall_index -= 1
 
 
 def clock_gettime_entry_handler(syscall_id, syscall_object, pid):
