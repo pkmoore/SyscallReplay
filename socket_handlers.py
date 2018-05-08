@@ -32,11 +32,8 @@ def listen_entry_handler(syscall_id, syscall_object, pid):
     params = extract_socketcall_parameters(pid, p, 1)
     fd_from_trace = int(syscall_object.args[0].value)
     validate_integer_argument(pid, syscall_object, 0, 0, params=params)
-    if should_replay_based_on_fd(fd_from_trace):
-        logging.debug('Replaying this system call')
-        subcall_return_success_handler(syscall_id, syscall_object, pid)
-    else:
-        logging.debug('Not replaying this call')
+    logging.debug('Replaying this system call')
+    subcall_return_success_handler(syscall_id, syscall_object, pid)
 
 
 def listen_exit_handler(syscall_id, syscall_object, pid):
