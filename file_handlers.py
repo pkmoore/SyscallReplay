@@ -418,7 +418,7 @@ def read_entry_handler(syscall_id, syscall_object, pid):
         validate_integer_argument(pid, syscall_object, 0, 0)
         # bytes to read
         validate_integer_argument(pid, syscall_object, 2, 2)
-        buffer_address = cint.peek_register(pid, cint.ECX)
+        buffer_address = cint.peek_register_unsigned(pid, cint.ECX)
         buffer_size_from_execution = cint.peek_register(pid,
                                                         cint.EDX)
         buffer_size_from_trace = int(syscall_object.args[2].value)
