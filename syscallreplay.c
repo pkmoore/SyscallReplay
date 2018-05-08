@@ -1460,11 +1460,11 @@ static PyObject* syscallreplay_populate_stat64_struct(PyObject* self,
         printf("sizeof(s.st_blocks): %d\n", sizeof(s.st_blocks));
         printf("s.st_blocks: %llu\n", s.st_blocks);
 
-        strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime(&s.st__ctime));
+        strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime((long int*)&s.st__ctime));
         printf("s.st_ctime: %s\n", buffer);
-        strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime(&s.st__mtime));
+        strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime((long int*)&s.st__mtime));
         printf("s.st_mtime: %s\n", buffer);
-        strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime(&s.st__atime));
+        strftime(buffer, 20, "%Y/%m/%d %H:%M:%S", localtime((long int*)&s.st__atime));
         printf("s.st_atime: %s\n", buffer);
     }
     copy_buffer_into_child_process_memory(child,
