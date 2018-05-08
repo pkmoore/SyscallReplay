@@ -139,10 +139,11 @@ def time_forger(pid):
     """
 
     logging.debug('Forging time call')
-    t = cint.injected_state['time_call_results'][-1]
-    times = cint.injected_state['time_call_results']
+    print(cint.injected_state['times'])
+    t = cint.injected_state['times'][-1]
+    times = cint.injected_state['times']
     new_t = t + _get_avg_time_result_delta(times)
-    cint.injected_state['time_call_results'].append(new_t)
+    cint.injected_state['times'].append(new_t)
     syscall_object = lambda: None
     syscall_object.name = 'time'
     syscall_object.ret = []
