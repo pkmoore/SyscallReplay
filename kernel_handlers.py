@@ -64,6 +64,10 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     if new_brk < last_map_end:
         raise NotImplementedError('munmap required here! Not implemented!')
 
+    logging.debug('Last map end: %x', last_map_end)
+    logging.debug('New map size: %x', new_map_size)
+    logging.debug('New map end: %x', last_map_end + new_map_size)
+
     # Preserve the registers mmap uses for parameters
     save_EBX  = cint.peek_register(pid, cint.EBX)
     save_ECX  = cint.peek_register(pid, cint.ECX)
@@ -97,6 +101,11 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     cint.syscall(pid, 0)
     next_syscall()
 
+    # Record the new mapping we have put in place
+    cint.injected_state['brks'].append({u'start': last_map_end,
+                                        u'prot': 3,
+                                        u'flags': 2,
+                                        u'size': new_map_size})
 
    # restore registers
     cint.poke_register(pid, cint.EBX, save_EBX)
