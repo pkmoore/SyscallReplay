@@ -212,7 +212,7 @@ def gettimeofday_entry_handler(syscall_id, syscall_object, pid):
         noop_current_syscall(pid)
         if syscall_object.args[2].value != 'NULL':
             raise NotImplementedError('time zones not implemented')
-        addr = cint.peek_register(pid, cint.EBX)
+        addr = cint.peek_register_unsigned(pid, cint.EBX)
         seconds = int(syscall_object.args[0].value.strip('{}'))
         microseconds = int(syscall_object.args[1].value.strip('{}'))
         logging.debug('Address: %x', addr)
