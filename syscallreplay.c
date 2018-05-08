@@ -33,9 +33,60 @@
 #include <inttypes.h>
 #include <sys/epoll.h>
 
+struct kepoll_event {
+    uint32_t events;
+    uint64_t data;
+};
+
+struct linux_dirent64 {
+    unsigned long long d_ino;
+    long long d_off;
+    unsigned short d_reclen;
+    unsigned char d_type;
+    char d_name[];
+};
+
 struct ktimespec {
     unsigned long tv_sec;
     long int tv_nsec;
+};
+
+struct ktermios
+{
+    tcflag_t c_iflag;/* input mode flags */
+    tcflag_t c_oflag;/* output mode flags */
+    tcflag_t c_cflag;/* control mode flags */
+    tcflag_t c_lflag;/* local mode flags */
+    cc_t c_line;/* line discipline */
+    cc_t c_cc[19];/* control characters */
+};
+
+struct ksigaction {
+  __sighandler_t k_sa_handler;
+  unsigned int sa_flags;
+  void* sa_restorer;
+  sigset_t sa_mask;
+};
+
+struct kstat64 {
+    unsigned long long st_dev;
+    unsigned char __pad0[4];
+    unsigned long st_ino;
+    unsigned int st_mode;
+    unsigned int st_nlink;
+    unsigned long st_uid;
+    unsigned long st_gid;
+    unsigned long long  st_rdev;
+    unsigned char __pad3[4];
+    long long st_size;
+    unsigned long st_blksize;
+    unsigned long long st_blocks;
+    unsigned long st__atime;
+    unsigned long st__atime_nsec;
+    unsigned long st__mtime;
+    unsigned int st__mtime_nsec;
+    unsigned long st__ctime;
+    unsigned long st__ctime_nsec;
 };
 
 static PyObject* SyscallReplayError;
@@ -236,15 +287,6 @@ static PyObject* syscallreplay_populate_readv_vectors(PyObject* self,
     }
     Py_RETURN_NONE;
 }
-
-
-struct linux_dirent64 {
-    unsigned long long d_ino;
-    long long d_off;
-    unsigned short d_reclen;
-    unsigned char d_type;
-    char d_name[];
-};
 
 static PyObject* syscallreplay_populate_getdents64_structure(PyObject* self,
                                                            PyObject* args) {
@@ -956,17 +998,7 @@ static PyObject* syscallreplay_populate_tcgets_response(PyObject* self,
         printf("\n");
     }
 
-    struct k_termios
-    {
-        tcflag_t c_iflag;/* input mode flags */
-        tcflag_t c_oflag;/* output mode flags */
-        tcflag_t c_cflag;/* control mode flags */
-        tcflag_t c_lflag;/* local mode flags */
-        cc_t c_line;/* line discipline */
-        cc_t c_cc[19];/* control characters */
-    };
-
-    struct k_termios t;
+    struct ktermios t;
     t.c_iflag = c_iflag;
     t.c_oflag = c_oflag;
     t.c_cflag = c_cflag;
@@ -997,7 +1029,7 @@ static PyObject* syscallreplay_populate_tcgets_response(PyObject* self,
 }
 
 static PyObject* syscallreplay_populate_rlimit_structure(PyObject* self,
-                                                       PyObject* args) {
+                                                         PyObject* args) {
     pid_t child;
     void* addr;
     rlim_t rlim_cur;
@@ -1031,7 +1063,7 @@ static PyObject* syscallreplay_populate_rlimit_structure(PyObject* self,
 }
 
 static PyObject* syscallreplay_populate_uname_structure(PyObject* self,
-                                                     PyObject* args) {
+                                                        PyObject* args) {
     pid_t child;
     void* addr;
     char* sysname;
@@ -1130,7 +1162,7 @@ static PyObject* syscallreplay_populate_unsigned_int(PyObject* self,
 }
 
 static PyObject* syscallreplay_populate_stack_structure(PyObject* self,
-                                                      PyObject* args) {
+                                                        PyObject* args) {
     pid_t child;
     void* addr;
     void* ss_sp;
@@ -1207,13 +1239,6 @@ static PyObject* syscallreplay_populate_llseek_result(PyObject* self,
     Py_RETURN_NONE;
 }
 
-struct kernel_sigaction {
-  __sighandler_t k_sa_handler;
-  unsigned int sa_flags;
-  void* sa_restorer;
-  sigset_t sa_mask;
-};
-
 static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
                                                             PyObject* args) {
   if (DEBUG) {
@@ -1222,7 +1247,7 @@ static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
 
   pid_t child;
 
-  struct kernel_sigaction oldact;
+  struct ksigaction oldact;
   void*         oldact_addr;
   int           old_sa_handler; // this could also be void * but not yet implemented
   PyObject*     mask_sig_list;
@@ -1286,7 +1311,7 @@ static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
   copy_buffer_into_child_process_memory(child, oldact_addr, (unsigned char*)&oldact, sizeof(oldact));
 
   // copy back out of memory to read / test values
-  struct kernel_sigaction test;
+  struct ksigaction test;
   copy_child_process_memory_into_buffer(child, oldact_addr, (unsigned char*)&test, sizeof(test));
 
 
@@ -1301,29 +1326,8 @@ static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
   Py_RETURN_NONE;
 }
 
-struct kstat64 {
-    unsigned long long st_dev;
-    unsigned char __pad0[4];
-    unsigned long st_ino;
-    unsigned int st_mode;
-    unsigned int st_nlink;
-    unsigned long st_uid;
-    unsigned long st_gid;
-    unsigned long long  st_rdev;
-    unsigned char __pad3[4];
-    long long st_size;
-    unsigned long st_blksize;
-    unsigned long long st_blocks;
-    unsigned long st__atime;
-    unsigned long st__atime_nsec;
-    unsigned long st__mtime;
-    unsigned int st__mtime_nsec;
-    unsigned long st__ctime;
-    unsigned long st__ctime_nsec;
-};
-
 static PyObject* syscallreplay_populate_stat64_struct(PyObject* self,
-                                                    PyObject* args) {
+                                                      PyObject* args) {
     pid_t child;
     void* addr;
     uint32_t st_dev1;
@@ -1952,10 +1956,6 @@ static PyObject* syscallreplay_write_poll_result(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 }
 
-struct kernel_epoll_event {
-uint32_t events;
-uint64_t data;
-};
 
 static PyObject* syscallreplay_write_epoll_struct(PyObject* self, PyObject* args) {
     pid_t child;
@@ -1966,7 +1966,7 @@ static PyObject* syscallreplay_write_epoll_struct(PyObject* self, PyObject* args
     if(!PyArg_ParseTuple(args, "IIIK", &child, (int*)&addr, &events, &data)) {
         PyErr_SetString(SyscallReplayError, "write_poll_result arg parse failed");
     }
-    struct kernel_epoll_event s;
+    struct kepoll_event s;
     s.events = events;
     s.data = data;
     if(DEBUG) {
@@ -1979,8 +1979,6 @@ static PyObject* syscallreplay_write_epoll_struct(PyObject* self, PyObject* args
                                           addr,
                                           (unsigned char*)&s,
                                           sizeof(s));
-
-
     Py_RETURN_NONE;
 }
 
