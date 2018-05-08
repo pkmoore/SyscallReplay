@@ -25,8 +25,6 @@ def select_entry_handler(syscall_id, syscall_object, pid):
     if syscall_object.args[4].value != 'NULL':
         timeval_addr = cint.peek_register_unsigned(pid, cint.EDI)
         logging.debug('timeval_addr: %x', timeval_addr)
-        seconds = int(syscall_object.args[4].value.strip('{}'))
-        microseconds = int(syscall_object.args[5].value.strip('{}'))
         logging.debug('seconds: %d', seconds)
         logging.debug('microseconds: %d', microseconds)
     readfds_addr = cint.peek_register_unsigned(pid, cint.ECX)
@@ -54,6 +52,12 @@ def select_entry_handler(syscall_id, syscall_object, pid):
             writefds = [int(x.strip('[]')) for x in out_fds]
         if 'exc' in ret_line:
             raise NotImplementedError('outfds and exceptfds not supported')
+        left_substr = re.search(r'left \{[0-9]*, [0-9]*\}$', ret_line)
+        if left_substr and timeval_addr != 0:
+            left_substr = ol[ol.rfind('left'):]
+            left_substr = left_substr.split('{')[1]
+            seconds = int(left_substr.split(',')[0])
+            microseconds = int(left_substr.split(',')[1].strip(' ').rstrip('})'))
     else:
         logging.debug('Select call timed out')
     logging.debug('Populating bitmaps')
