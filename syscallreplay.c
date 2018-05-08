@@ -1551,6 +1551,9 @@ static PyObject* syscallreplay_populate_select_bitmaps(PyObject* self,
                         "except_list received in C code is not a list");
     }
     PyObject* iter;
+    copy_child_process_memory_into_buffer(child, readfds_addr,
+                                         (unsigned char*)&tmp, sizeof(tmp));
+    FD_ZERO(&tmp);
     if(readfds_addr != 0) {
         if(!(iter = PyObject_GetIter(readfds_list))) {
             PyErr_SetString(SyscallReplayError,
@@ -1560,9 +1563,6 @@ static PyObject* syscallreplay_populate_select_bitmaps(PyObject* self,
             printf("C: Select: About to parse readfds\n");
         }
         next = PyIter_Next(iter);
-        copy_child_process_memory_into_buffer(child, readfds_addr,
-                                               (unsigned char*)&tmp, sizeof(tmp));
-        FD_ZERO(&tmp);
         while(next) {
             if(!PyInt_Check(next)) {
                 PyErr_SetString(SyscallReplayError,
@@ -1575,10 +1575,12 @@ static PyObject* syscallreplay_populate_select_bitmaps(PyObject* self,
             FD_SET((int)fd, &tmp);
             next = PyIter_Next(iter);
         }
-        copy_buffer_into_child_process_memory(child, readfds_addr,
-                                            (unsigned char*)&tmp, sizeof(tmp));
-
     }
+    copy_buffer_into_child_process_memory(child, readfds_addr,
+                                        (unsigned char*)&tmp, sizeof(tmp));
+    copy_child_process_memory_into_buffer(child, writefds_addr,
+                                         (unsigned char*)&tmp, sizeof(tmp));
+    FD_ZERO(&tmp);
     if(writefds_addr != 0 ) {
         if(!(iter = PyObject_GetIter(writefds_list))) {
             PyErr_SetString(SyscallReplayError,
@@ -1588,10 +1590,6 @@ static PyObject* syscallreplay_populate_select_bitmaps(PyObject* self,
             printf("C: Select: About to parse writefds\n");
         }
         next = PyIter_Next(iter);
-        copy_child_process_memory_into_buffer(child, writefds_addr,
-                                               (unsigned char*)&tmp, sizeof(tmp));
-
-        FD_ZERO(&tmp);
         while(next) {
             if(!PyInt_Check(next)) {
                 PyErr_SetString(SyscallReplayError,
@@ -1604,9 +1602,12 @@ static PyObject* syscallreplay_populate_select_bitmaps(PyObject* self,
             FD_SET((int)fd, &tmp);
             next = PyIter_Next(iter);
         }
-        copy_buffer_into_child_process_memory(child, writefds_addr,
-                                            (unsigned char*)&tmp, sizeof(tmp));
     }
+    copy_buffer_into_child_process_memory(child, writefds_addr,
+                                        (unsigned char*)&tmp, sizeof(tmp));
+    copy_child_process_memory_into_buffer(child, exceptfds_addr,
+                                         (unsigned char*)&tmp, sizeof(tmp));
+    FD_ZERO(&tmp);
     if(exceptfds_addr != 0) {
         if(!(iter = PyObject_GetIter(exceptfds_list))) {
             PyErr_SetString(SyscallReplayError,
@@ -1616,9 +1617,6 @@ static PyObject* syscallreplay_populate_select_bitmaps(PyObject* self,
             printf("C: Select: About to parse except\n");
         }
         next = PyIter_Next(iter);
-        copy_child_process_memory_into_buffer(child, exceptfds_addr,
-                                               (unsigned char*)&tmp, sizeof(tmp));
-        FD_ZERO(&tmp);
         while(next) {
             if(!PyInt_Check(next)) {
                 PyErr_SetString(SyscallReplayError,
@@ -1631,9 +1629,9 @@ static PyObject* syscallreplay_populate_select_bitmaps(PyObject* self,
             FD_SET((int)fd, &tmp);
             next = PyIter_Next(iter);
         }
-        copy_buffer_into_child_process_memory(child, exceptfds_addr,
-                                            (unsigned char*)&tmp, sizeof(tmp));
     }
+    copy_buffer_into_child_process_memory(child, exceptfds_addr,
+                                        (unsigned char*)&tmp, sizeof(tmp));
     Py_RETURN_NONE;
 }
 
