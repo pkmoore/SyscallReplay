@@ -742,9 +742,9 @@ static PyObject* syscallreplay_populate_timeval_structure(PyObject* self,
     self = self;
     pid_t child;
     void* addr;
-    time_t seconds;
-    suseconds_t microseconds;
-    if(!PyArg_ParseTuple(args, "iill", &child, &addr, &seconds, &microseconds)) {
+    long seconds;
+    long microseconds;
+    if(!PyArg_ParseTuple(args, "IIll", &child, &addr, &seconds, &microseconds)) {
         PyErr_SetString(SyscallReplayError,
                         "copy_bytes failed parse failed");
     }
