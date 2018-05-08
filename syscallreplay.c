@@ -641,7 +641,7 @@ static PyObject* syscallreplay_populate_timespec_structure(PyObject* self,
     if(DEBUG) {
         printf("C: timespec: child: %d\n", child);
         printf("C: timespec: addr: %p\n", addr);
-        printf("C: timespec: seconds: %u\n", seconds);
+        printf("C: timespec: seconds: %lu\n", seconds);
         printf("C: timespec: nanoseconds: %ld\n", nanoseconds);
         printf("C: timespec: sizeof(seconds): %d\n", sizeof(seconds));
         printf("C: timespec: sizeof(nanoseconds): %d\n", sizeof(nanoseconds));
@@ -650,7 +650,7 @@ static PyObject* syscallreplay_populate_timespec_structure(PyObject* self,
     t.tv_sec = seconds;
     t.tv_nsec = nanoseconds;
     if(DEBUG) {
-        printf("C: timespec: tv_sec: %u\n", t.tv_sec);
+        printf("C: timespec: tv_sec: %lu\n", t.tv_sec);
         printf("C: timespec: tv_nsec: %ld\n", t.tv_nsec);
     }
     copy_buffer_into_child_process_memory(child, addr, (unsigned char*)&t, sizeof(t));
