@@ -1,6 +1,5 @@
 import logging
 import time
-from util import *
 from util import (cint,
                   noop_current_syscall,
                   apply_return_conditions,
@@ -60,7 +59,7 @@ def timer_settime_entry_handler(syscall_id, syscall_object, pid):
         raise NotImplementedError('Unsuccessful calls not implemented')
     else:
         logging.debug(str(syscall_object.args[-1]))
-        OLD_value_present = syscall_object.args[-1].value != 'NULL'
+        old_value_present = syscall_object.args[-1].value != 'NULL'
         if old_value_present:
             logging.debug("Old value present, have to copy it into memory")
 
