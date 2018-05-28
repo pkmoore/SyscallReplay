@@ -1,3 +1,6 @@
+""" Handlers for time related system calls
+"""
+
 import logging
 import time
 from util import (cint,
@@ -25,7 +28,7 @@ def timer_create_entry_handler(syscall_id, syscall_object, pid):
         timerid = int(syscall_object.args[-1].value.strip('{}'))
         logging.debug(str(timerid))
 
-        cint.populate_timer_t_structure(pid, addr, timerid);
+        cint.populate_timer_t_structure(pid, addr, timerid)
 
         noop_current_syscall(pid)
         apply_return_conditions(pid, syscall_object)
@@ -66,8 +69,11 @@ def timer_settime_entry_handler(syscall_id, syscall_object, pid):
             addr = cint.peek_register(pid, cint.ESI)
             logging.debug('old_value address: %x', addr)
 
-            itimerspec_starting_index = 6;
-            timer_extract_and_populate_itimerspec(syscall_object, pid, addr, itimerspec_starting_index)
+            itimerspec_starting_index = 6
+            timer_extract_and_populate_itimerspec(syscall_object,
+                                                  pid,
+                                                  addr,
+                                                  itimerspec_starting_index)
 
         noop_current_syscall(pid)
         apply_return_conditions(pid, syscall_object)
@@ -87,11 +93,11 @@ def timer_gettime_entry_handler(syscall_id, syscall_object, pid):
 
         if timer_id_from_trace != timer_id_from_execution:
             raise ReplayDeltaError("Timer id ({}) from execution "
-                                    "differs from trace ({})"
+                                   "differs from trace ({})"
                                    .format(timer_id_from_execution, timer_id_from_trace))
 
         addr = cint.peek_register(pid, cint.ECX)
-        itimerspec_starting_index = 1;
+        itimerspec_starting_index = 1
         timer_extract_and_populate_itimerspec(syscall_object, pid, addr, itimerspec_starting_index)
         noop_current_syscall(pid)
         apply_return_conditions(pid, syscall_object)
@@ -143,7 +149,6 @@ def time_forger(pid):
     """
 
     logging.debug('Forging time call')
-    print(cint.injected_state['times'])
     t = cint.injected_state['times'][-1]
     times = cint.injected_state['times']
     new_t = t + _get_avg_time_result_delta(times)
@@ -169,10 +174,10 @@ def gettimeofday_forger(pid):
         raise NotImplementedError('Cannot forge gettimeofday() with a timezone')
     time_addr = cint.peek_register(pid, cint.EBX)
     seconds_times = [x['seconds']
-                    for x in cint.injected_state['gettimeofdays']]
+                     for x in cint.injected_state['gettimeofdays']]
     microseconds_times = [x['microseconds']
-                         for x in cint.injected_state['gettimeofdays']]
-    if len(seconds_times) != 0 and len(microseconds_times) != 0:
+                          for x in cint.injected_state['gettimeofdays']]
+    if not seconds_times and not microseconds_times:
         seconds_delta = _get_avg_time_result_delta(seconds_times)
         microseconds_delta = _get_avg_time_result_delta(microseconds_times)
         last_seconds = cint.injected_state['gettimeofdays'][-1]['seconds']
@@ -203,7 +208,7 @@ def _get_avg_time_result_delta(times):
         if i == 0:
             continue
         deltas.append(times[i] - times[i-1])
-    if len(deltas) == 0:
+    if deltas:
         # We don't have enough to do averages so start with 10
         return 1000
     return reduce(lambda x, y: x + y, deltas) / len(deltas)
@@ -253,7 +258,7 @@ def clock_gettime_entry_handler(syscall_id, syscall_object, pid):
         noop_current_syscall(pid)
         clock_type_from_trace = syscall_object.args[0].value
         clock_type_from_execution = cint.peek_register(pid,
-                                                              cint.EBX)
+                                                       cint.EBX)
         # The first arg from execution must be CLOCK_MONOTONIC
         # The first arg from the trace must be CLOCK_MONOTONIC
         if clock_type_from_trace == 'CLOCK_MONOTONIC':
@@ -273,8 +278,10 @@ def clock_gettime_entry_handler(syscall_id, syscall_object, pid):
         logging.debug('Nanoseconds: %d', nanoseconds)
         logging.debug('Address: %x', addr)
         logging.debug('Populating timespec strucutre')
-        cint.populate_timespec_structure(pid, addr,
-                                                seconds, nanoseconds)
+        cint.populate_timespec_structure(pid,
+                                         addr,
+                                         seconds,
+                                         nanoseconds)
         apply_return_conditions(pid, syscall_object)
 
 
