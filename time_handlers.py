@@ -1,3 +1,4 @@
+# pylint: disable=missing-docstring, unused-argument, invalid-name
 """ Handlers for time related system calls
 """
 
