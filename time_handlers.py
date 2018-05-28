@@ -4,11 +4,11 @@
 
 import logging
 import time
-from util import (cint,
-                  noop_current_syscall,
-                  apply_return_conditions,
-                  ReplayDeltaError,
-                  validate_integer_argument,)
+from .util import (cint,
+                   noop_current_syscall,
+                   apply_return_conditions,
+                   ReplayDeltaError,
+                   validate_integer_argument,)
 
 
 def timer_create_entry_handler(syscall_id, syscall_object, pid):
