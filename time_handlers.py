@@ -1,6 +1,11 @@
 import logging
 import time
 from util import *
+from util import (cint,
+                  noop_current_syscall,
+                  apply_return_conditions,
+                  ReplayDeltaError,
+                  validate_integer_argument,)
 
 
 def timer_create_entry_handler(syscall_id, syscall_object, pid):
@@ -33,7 +38,7 @@ def timer_extract_and_populate_itimerspec(syscall_object, pid, addr, start_index
 
     i = start_index
     interval_seconds = int(syscall_object.args[i].value.split("{")[2].strip())
-    interval_nanoseconds = int(syscall_object.args[i+1].value.strip('{}'))        
+    interval_nanoseconds = int(syscall_object.args[i+1].value.strip('{}'))
     logging.debug('Interval Seconds: %d', interval_seconds)
     logging.debug('Interval Nanoseconds: %d', interval_nanoseconds)
 
