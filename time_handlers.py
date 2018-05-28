@@ -18,7 +18,7 @@ def timer_create_entry_handler(syscall_id, syscall_object, pid):
     else:
         # only SIGEV_NONE is supported as other sigevents can't be replicated as of now
         sigev_type = syscall_object.args[3].value.strip()
-        logging.debug("Sigevent type: " + str(sigev_type))
+        logging.debug("Sigevent type: %s", str(sigev_type))
 
         if sigev_type != 'SIGEV_NONE':
             raise NotImplementedError("Sigevent type %s is not supported" % (sigev_type))
@@ -205,7 +205,7 @@ def gettimeofday_forger(pid):
 
 def _get_avg_time_result_delta(times):
     deltas = []
-    for i, v in enumerate(times):
+    for i, _ in enumerate(times):
         if i == 0:
             continue
         deltas.append(times[i] - times[i-1])
