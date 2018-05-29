@@ -1,3 +1,5 @@
+""" Dictionary mapping string errno codes to their integer values
+"""
 ERRNO_CODES = {
     'EPERM': 1,  # Operation not permitted
     'ENOENT': 2,  # No such file or directory
