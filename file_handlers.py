@@ -46,8 +46,6 @@ def eventfd2_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering eventfd2 entry handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
     fd = syscall_object.ret[0]
-    if fd != -1:
-        cint.injected_state['open_fds'].append(syscall_object.ret[0])
     noop_current_syscall(pid)
     apply_return_conditions(pid, syscall_object)
 
@@ -362,8 +360,6 @@ def close_entry_handler(syscall_id, syscall_object, pid):
     validate_integer_argument(pid, syscall_object, 0, 0)
     fd_from_trace = int(syscall_object.args[0].value)
     # We always replay unsuccessful close calls
-    if syscall_object.ret[0] != -1:
-        cint.injected_state['open_fds'].remove(fd_from_trace)
     noop_current_syscall(pid)
     apply_return_conditions(pid, syscall_object)
 
@@ -406,9 +402,6 @@ def read_entry_handler(syscall_id, syscall_object, pid):
     validate_integer_argument(pid, syscall_object, 2, 2)
     fd = cint.peek_register(pid, cint.EBX)
     fd_from_trace = syscall_object.args[0].value
-    if fd not in cint.injected_state['open_fds']:
-        raise ReplayDeltaError('Attempted to read from non-open file '
-                               'descriptor: {}'.format(fd))
     logging.debug('File descriptor from execution: %s', fd)
     logging.debug('File descriptor from trace: %s', fd_from_trace)
     ret_val = cleanup_return_value(syscall_object.ret[0])
@@ -508,9 +501,6 @@ def write_entry_handler(syscall_id, syscall_object, pid):
         logging.debug(bytes_from_trace.encode('hex'))
         logging.debug(bytes_from_execution.encode('hex'))
     fd = int(syscall_object.args[0].value)
-    if fd not in cint.injected_state['open_fds']:
-        raise ReplayDeltaError('Attempted to write to non-open file '
-                               'descriptor: {}'.format(fd))
     if fd == 1 or fd == 2:
         print('####   Output   ####')
         print(bytes_from_trace, end='')
@@ -734,10 +724,6 @@ def open_entry_handler(syscall_id, syscall_object, pid):
                         'file name from trace ({})'.format(fn_from_execution,
                                                            fn_from_trace))
     fd_from_trace = int(syscall_object.ret[0])
-    if fd_from_trace in cint.injected_state['open_fds']:
-        raise ReplayDeltaError('Epoll would return already open fd')
-    if fd_from_trace != -1:
-        cint.injected_state['open_fds'].append(fd_from_trace)
     noop_current_syscall(pid)
     apply_return_conditions(pid, syscall_object)
 

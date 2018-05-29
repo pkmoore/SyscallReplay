@@ -315,7 +315,6 @@ def socket_entry_handler(syscall_id, syscall_object, pid):
         noop_current_syscall(pid)
         fd = int(syscall_object.ret[0])
         logging.debug('File Descriptor from trace: %s', fd)
-        cint.injected_state['open_fds'].append(fd)
         apply_return_conditions(pid, syscall_object)
     else:
         logging.info('Ignoring non-PF_INET call to socket')
@@ -366,11 +365,6 @@ def accept_subcall_entry_handler(syscall_id, syscall_object, pid):
                                               sockaddr_length)
     if syscall_object.ret[0] != -1:
         ret = syscall_object.ret[0]
-        if ret in cint.injected_state['open_fds']:
-            raise Exception('Syscall object return value ({}) already '
-                            'exists in open file descriptors list'
-                            .format(ret))
-        cint.injected_state['open_fds'].append(ret)
     apply_return_conditions(pid, syscall_object)
 
 

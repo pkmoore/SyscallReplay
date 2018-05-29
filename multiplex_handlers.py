@@ -139,10 +139,6 @@ def epoll_create_entry_handler(sycall_id, syscall_object, pid):
     logging.debug('Entering epoll_create entry handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
     fd_from_trace = int(syscall_object.ret[0])
-    if fd_from_trace in cint.injected_state['open_fds']:
-        raise ReplayDeltaError('Epoll would return already open fd')
-    if fd_from_trace != -1:
-        cint.injected_state['open_fds'].append(fd_from_trace)
     noop_current_syscall(pid)
     apply_return_conditions(pid, syscall_object)
 
