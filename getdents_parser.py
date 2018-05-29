@@ -1,3 +1,8 @@
+"""Code for parsing the structure returned by getdents as represented by
+strace's format.  posix-omni-parser fails entirely to deal with these
+structures so we fall back to manually dealing with the original line
+"""
+
 DIRENT_TYPES = {
     'DT_UNKNOWN': 0,
     'DT_FIFO': 1,
@@ -43,7 +48,8 @@ def parse_getdents_structure(syscall_object):
         try:
             i['d_type'] = DIRENT_TYPES[i['d_type']]
         except KeyError:
-            raise NotImplementedError('Unsupported d_type: {}', i['d_type'])
+            raise NotImplementedError('Unsupported d_type: {}'
+                                      .format(i['d_type']))
         i['d_ino'] = int(i['d_ino'])
         i['d_reclen'] = int(i['d_reclen'])
         i['d_off'] = int(i['d_off'])

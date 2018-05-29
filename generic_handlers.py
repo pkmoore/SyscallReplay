@@ -1,16 +1,17 @@
-"""Generic handlers
+# pylint: disable=unused-argument
+"""Handlers for generically dealing with system calls requiring no specialized
+behavior
 """
 
-import logging
 
-from errno_dict import ERRNO_CODES
+from .errno_dict import ERRNO_CODES
 
-from util import (ReplayDeltaError,
-                  logging,
-                  cint,
-                  noop_current_syscall,
-                  cleanup_return_value,
-                  apply_return_conditions,)
+from .util import (ReplayDeltaError,
+                   logging,
+                   cint,
+                   noop_current_syscall,
+                   cleanup_return_value,
+                   apply_return_conditions,)
 
 
 def syscall_return_success_handler(syscall_id, syscall_object, pid):
@@ -78,9 +79,10 @@ def check_return_value_exit_handler(syscall_id, syscall_object, pid):
     if ret_from_execution < 0:
         ret_from_execution &= 0xffffffff
     if ret_from_execution != ret_from_trace:
-        raise ReplayDeltaError('Return value from execution ({}, {:02x}) differs '
-                        'from return value from trace ({}, {:02x})'
-                        .format(ret_from_execution,
-                                ret_from_execution,
-                                ret_from_trace,
-                                ret_from_trace))
+        raise ReplayDeltaError('Return value from execution ({}, {:02x}) '
+                               'differs from return value from trace '
+                               '({}, {:02x})'
+                               .format(ret_from_execution,
+                                       ret_from_execution,
+                                       ret_from_trace,
+                                       ret_from_trace))

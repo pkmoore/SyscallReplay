@@ -1,3 +1,7 @@
+"""Various dictionaies mapping pretty flags from strace to the values to which
+they correspond
+"""
+
 OS_CONST = {
     # asm-generic/fcntl.h
     'O_RDONLY': 00000000,
@@ -9,7 +13,6 @@ OS_CONST = {
     'SO_ERROR': 4,
     # asm-generic/fcntl.h
     'O_NONBLOCK': 0004000,
-    'O_APPEND': 00002000,
     'O_NOFOLLOW': 00400000,
     'O_DIRECTORY': 00200000
 
@@ -63,7 +66,8 @@ SIGNAL_DFLT_HANDLER_TO_INT = {
     'SIG_IGN': 1
 }
 
-SIGNAL_INT_TO_DFLT_HANDLER = {y: x for x, y in SIGNAL_DFLT_HANDLER_TO_INT.iteritems()}
+SIGNAL_INT_TO_DFLT_HANDLER = {y: x for x, y
+                              in SIGNAL_DFLT_HANDLER_TO_INT.iteritems()}
 
 
 SIGNAL_FLAG_TO_HEX = {
@@ -74,11 +78,11 @@ SIGNAL_FLAG_TO_HEX = {
     'SA_INTERRUPT': 0x20000000,
     'SA_RESTART':   0x10000000,
     'SA_ONSTACK':   0x08000000,
-    'SA_STACK':     0x08000000, # SA_ONSTACK alias
+    'SA_STACK':     0x08000000,  # SA_ONSTACK alias
     'SA_NODEFER':   0x40000000,
-    'SA_NOMASK':    0x40000000, # SA_NODEFER alias
+    'SA_NOMASK':    0x40000000,  # SA_NODEFER alias
     'SA_RESETHAND': 0x80000000,
-    'SA_ONESHOT':   0x80000000  # SA_RESETHAND alias
+    'SA_ONESHOT':   0x80000000   # SA_RESETHAND alias
 }
 
 SIGNAL_HEX_TO_FLAG = {y: x for x, y in SIGNAL_FLAG_TO_HEX.iteritems()}

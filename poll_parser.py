@@ -1,4 +1,9 @@
-from os_dict import POLL_EVENT_TO_INT
+"""Code for parsing the information around a call to poll() as represented by
+strace's format.  posix-omni-parser fails to deal with this correctly so we
+fall back on manually parsing the original line
+"""
+
+from .os_dict import POLL_EVENT_TO_INT
 
 
 def parse_poll_results(syscall_object):
