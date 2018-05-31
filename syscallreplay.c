@@ -1821,7 +1821,6 @@ static PyObject* syscallreplay_syscall(PyObject* self, PyObject* args) {
 
 static PyObject* syscallreplay_attach(PyObject* self, PyObject* args) {
   pid_t child;
-  int status;
   if(!PyArg_ParseTuple(args, "I", &child)) {
     PyErr_SetString(SyscallReplayError, "attach parsetuple failed");
   }
@@ -1830,11 +1829,7 @@ static PyObject* syscallreplay_attach(PyObject* self, PyObject* args) {
     perror("Attach failed");
     PyErr_SetString(SyscallReplayError, "Attach failed");
   }
-  if(waitpid(child, &status, 0) == -1) {
-    perror("Wait failed!");
-    PyErr_SetString(SyscallReplayError, "Wait after attach failed");
-  }
-  return Py_BuildValue("i", status);
+  Py_RETURN_NONE;
 }
 
 static PyObject* syscallreplay_detach(PyObject* self, PyObject* args) {
