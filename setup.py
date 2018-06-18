@@ -10,5 +10,4 @@ SYSCALLREPLAY_MOD = Extension('syscallreplay',
 setup(name='syscallreplay',
       version='0.1',
       description='Replay a system call trace through an application',
-      packages=['syscallreplay'],
       ext_modules=[SYSCALLREPLAY_MOD])
