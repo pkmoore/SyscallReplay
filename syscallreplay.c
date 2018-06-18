@@ -3,35 +3,37 @@
 #define _LARGEFILE_SOURCE
 #define _LARGEFILE64_SOURCE
 
-#include <python2.7/Python.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
-#include <errno.h>
 #include <sys/syscall.h>
 #include <sys/reg.h>
 #include <sys/socket.h>
-#include <poll.h>
-#include <stdbool.h>
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
 #include <sys/utsname.h>
 #include <sys/time.h>
 #include <sys/times.h>
 #include <sys/resource.h>
-#include <termios.h>
 #include <sys/statfs.h>
+#include <sys/ioctl.h>
+#include <sys/uio.h>
+#include <sys/epoll.h>
+#include <sys/sysmacros.h>
+
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <python2.7/Python.h>
+
 #include <time.h>
-#include <sys/ioctl.h>
+#include <inttypes.h>
+#include <poll.h>
+#include <stdbool.h>
 #include <dirent.h>
 #include <sched.h>
 #include <signal.h>
-#include <sys/uio.h>
-#include <inttypes.h>
-#include <sys/epoll.h>
+#include <errno.h>
+#include <termios.h>
 
 struct kepoll_event {
     uint32_t events;
