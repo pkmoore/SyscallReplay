@@ -1,11 +1,20 @@
-# pylint: disable=no-self-use
-"""Tests for generic system call handlers
+"""
+<Program Name>
+  syscallreplay
+
+<Purpose>
+  Provide functions necessary for examining posix-omni-parser provided system
+  call objects and writing them into the memory of a process using some
+  interface.  Right now this interface is uses ptrace and is provided by the
+  syscallreplay CPython extension.
+
 """
 
 
 import unittest
 import mock
 import bunch
+
 import syscallreplay.generic_handlers
 
 
