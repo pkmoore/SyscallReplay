@@ -1,8 +1,3 @@
-# pylint: disable=unused-argument
-"""Handlers for generically dealing with system calls requiring no specialized
-behavior
-"""
-
 import logging
 
 import syscallreplay
@@ -23,10 +18,12 @@ def syscall_return_success_handler(syscall_id, syscall_object, pid):
     errno
 
     """
-
     logging.debug('Using default "return success" handler')
     util.noop_current_syscall(pid)
     util.apply_return_conditions(pid, syscall_object)
+
+
+
 
 
 def check_return_value_entry_handler(syscall_id, syscall_object, pid):
@@ -45,6 +42,10 @@ def check_return_value_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Letting system call %d : %s pass through',
                   syscall_id,
                   syscall_object.name)
+
+
+
+
 
 
 def check_return_value_exit_handler(syscall_id, syscall_object, pid):

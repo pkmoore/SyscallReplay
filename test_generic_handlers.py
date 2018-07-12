@@ -10,8 +10,7 @@ import syscallreplay.generic_handlers
 
 
 class TestSyscallReturnSuccessHandler(unittest.TestCase):
-    """Tests for syscall_return_success_handler
-    """
+
 
     @mock.patch('syscallreplay.util.noop_current_syscall')
     @mock.patch('syscallreplay.util.apply_return_conditions')
@@ -26,6 +25,7 @@ class TestSyscallReturnSuccessHandler(unittest.TestCase):
         namespace.  This is why we are mocking
         syscallreplay.generic_handlers.<whatever> rather than
         syscallreplay.util.<whatever>
+
         """
 
         syscall_id = 4
@@ -39,15 +39,18 @@ class TestSyscallReturnSuccessHandler(unittest.TestCase):
         mock_apply.assert_called_with(pid, syscall_object)
 
 
+
+
+
 class TestCheckReturnValueEntryHandler(unittest.TestCase):
-    """Tests for check_return_value_entry_handler
-    """
+
 
     @mock.patch('logging.debug')
     def test_ensure_logging_done(self, mock_log):
         """Ensure logging happens
         This handler pretty much just reports that it was called for logging
         purposes.  All we test for is that this logging was done.
+
         """
 
         syscall_id = 4
@@ -58,9 +61,11 @@ class TestCheckReturnValueEntryHandler(unittest.TestCase):
         mock_log.assert_called()
 
 
+
+
+
 class TestCheckReturnValueExitHandler(unittest.TestCase):
-    """Tests for check_return_value_exit_handler
-    """
+
 
     @mock.patch('syscallreplay.util.cleanup_return_value', return_value=4)
     @mock.patch('syscallreplay.generic_handlers.syscallreplay')
@@ -70,6 +75,7 @@ class TestCheckReturnValueExitHandler(unittest.TestCase):
                                  mock_syscallreplay,
                                  mock_clean):
         """Ensure equal return values pass don't raise
+
         """
 
         mock_syscallreplay.EAX = 4
