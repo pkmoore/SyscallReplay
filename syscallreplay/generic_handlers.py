@@ -5,9 +5,9 @@ behavior
 
 import logging
 
-import errno_dict
-import util as util
 import syscallreplay
+import syscallreplay.errno_dict as errno_dict
+import syscallreplay.util as util
 
 
 def syscall_return_success_handler(syscall_id, syscall_object, pid):
