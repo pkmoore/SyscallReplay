@@ -53,9 +53,9 @@ def string_time_to_int(strtime):
         return 0
     else:
         logging.debug('Got normal st_atime')
-        strtime = strtime[:strtime.find('.')]
-        return int(time.mktime(time.strptime(strtime,
-                                             '%Y/%m/%d-%H:%M:%S')))
+        if '.' in strtime:
+            strtime = strtime[:strtime.find('.')]
+        return int(time.mktime(time.strptime(strtime, '%Y/%m/%d-%H:%M:%S')))
 
 def stop_for_debug(pid):
     logging.debug('Stopping %d for debug', pid)

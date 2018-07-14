@@ -71,6 +71,12 @@ class TestStringTimeToInt(unittest.TestCase):
     @mock.patch('time.mktime')
     @mock.patch('time.strptime')
     def test_nonzero_strtime(self, mock_strptime, mock_mktime, mock_int, mock_log):
+        """Ensure correct int time if strtime valid non-'0'
+        <Purpose>
+          Ensure that a correct int time value is calculated when a non-'0'
+          strtime is provided.
+
+        """
         strtime = '2001/01/01-01:01:01'
         strptime_format = '%Y/%m/%d-%H:%M:%S'
         strptime_return_value = mock.Mock(tm_year=2001,
