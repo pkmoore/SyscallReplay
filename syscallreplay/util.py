@@ -1,8 +1,16 @@
-'''This is the standard 'kitchen sink' file for this project.  Essentially, its
-a lazy place for me to put code that needs to be called from many other
-places.  Intiailly, a lot of these functions were copy-pasted around in
-different handler modules so we're at least better than that at this point...
-'''
+"""
+<Program Name>
+util
+
+<Purpose>
+  This is the standard 'kitchen sink' file for this project.  Essentially,
+  its a lazy place for me to put code that needs to be called from many other
+  places.  Intiailly, a lot of these functions were copy-pasted around in
+  different handler modules so we're at least better than that at this point...
+
+"""
+
+
 import binascii
 import logging
 import os
