@@ -17,7 +17,6 @@ import os
 import signal
 import sys
 import time
-from struct import pack, unpack
 import syscallreplay as cint
 
 from errno_dict import ERRNO_CODES
