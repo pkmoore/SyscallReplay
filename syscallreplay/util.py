@@ -41,21 +41,27 @@ def process_is_alive(pid):
 
 
 def string_time_to_int(strtime):
-    """Convert string time in strace format to an int
-    return value: time from the epoch in seconds as an int
+  """
+  <Purpose>
+    Convert string time in strace format to an int
 
     Not Implemented:
     Microseconds are lost
-    """
 
-    if strtime == '0':
-        logging.debug('Got zero st_atime')
-        return 0
-    else:
-        logging.debug('Got normal st_atime')
-        if '.' in strtime:
-            strtime = strtime[:strtime.find('.')]
-        return int(time.mktime(time.strptime(strtime, '%Y/%m/%d-%H:%M:%S')))
+  <Returns>
+    time from the epoch in seconds as an int
+
+  """
+
+  if strtime == '0':
+    logging.debug('Got zero st_atime')
+    return 0
+  else:
+    logging.debug('Got normal st_atime')
+    if '.' in strtime:
+      strtime = strtime[:strtime.find('.')]
+    return int(time.mktime(time.strptime(strtime, '%Y/%m/%d-%H:%M:%S')))
+
 
 def stop_for_debug(pid):
     logging.debug('Stopping %d for debug', pid)
