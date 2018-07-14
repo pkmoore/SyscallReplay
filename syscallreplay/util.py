@@ -26,17 +26,18 @@ from syscall_dict import SYSCALLS
 
 
 def process_is_alive(pid):
-   """
-    <Purpose>
-      Return whether or not a process is alive.  If a process is alive, kill()
-      with no signal (0) succeeds but doesn't do anything.  If the process isn't
-      alive, an OSError is raised.
-    """
-    try:
-        os.kill(int(pid), 0)
-        return True
-    except OSError:
-        return False
+  """
+  <Purpose>
+    Return whether or not a process is alive.  If a process is alive, kill()
+    with no signal (0) succeeds but doesn't do anything.  If the process isn't
+    alive, an OSError is raised.
+
+  """
+  try:
+    os.kill(int(pid), 0)
+    return True
+  except OSError:
+    return False
 
 
 def string_time_to_int(strtime):
