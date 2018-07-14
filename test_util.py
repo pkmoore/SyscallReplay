@@ -32,3 +32,18 @@ class TestProcessIsAlive(unittest.TestCase):
         signal_number = 0
         self.assertEqual(syscallreplay.util.process_is_alive(pid), False)
         mock_kill.assert_called_with(pid, signal_number)
+
+
+    @mock.patch('os.kill')
+    def test_process_exists(self, mock_kill):
+        """Ensure returns True when process does not exist
+        <Purpose>
+          Ensure this function returns True when os.kill() indicates that the
+          specified process is alive (i.e. kill(0) succeeds).
+
+        """
+
+        pid = 555
+        signal_number = 0
+        self.assertEqual(syscallreplay.util.process_is_alive(pid), True)
+        mock_kill.assert_called_with(pid, signal_number)
