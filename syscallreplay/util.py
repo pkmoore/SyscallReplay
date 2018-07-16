@@ -69,7 +69,7 @@ def stop_for_debug(pid):
     logging.debug('SIGSTOP sent')
     cint.detach(pid)
     logging.debug('ptrace detached')
-    raw_input()
+    raise ReplayDeltaError('Process {} exited for debugging'.format(pid))
 
 
 def dump_memory_to_file(pid, addr_start, addr_end, filename):
