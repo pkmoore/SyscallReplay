@@ -190,3 +190,40 @@ class TestNoopCurrentSyscall(unittest.TestCase):
     mock_next.assert_called()
     mock_syscallreplay.peek_register(pid, mock_syscallreplay.ORIG_EAX)
     self.assertEqual(mock_syscallreplay.entering_syscall, True)
+
+
+
+
+
+class TestNextSyscall(unittest.TestCase):
+
+  @mock.patch('os.wait', return_value=[None, False])
+  @mock.patch('os.WIFEXITED', return_value=False)
+  def test_have_next_systemcall(self, mock_exited, mock_wait):
+    """Make sure True is returned when there is a next system call
+    <Purpose>
+      Make sure True is returned when there is a next system call.  We know this
+      is the case when os.WIFEXITED's returned status indicates the process has
+      NOT exited.
+
+    """
+
+    self.assertEqual(syscallreplay.util.next_syscall(), True)
+
+    mock_wait.assert_called()
+    mock_exited.assert_called_with(False)
+
+
+  @mock.patch('os.wait', return_value=[None, True])
+  @mock.patch('os.WIFEXITED', return_value=True)
+  def test_have_next_systemcall(self, mock_exited, mock_wait):
+    """Make sure False is returned when the process has exited
+    <Purpose>
+      Make sure False is returned when the processes has exited.
+
+    """
+
+    self.assertEqual(syscallreplay.util.next_syscall(), False)
+
+    mock_wait.assert_called()
+    mock_exited.assert_called_with(True)
