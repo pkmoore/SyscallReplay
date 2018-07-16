@@ -123,8 +123,16 @@ def noop_current_syscall(pid):
 
 
 def next_syscall():
-    '''Wait for the child process to pause at the next system call entry/exit
-    '''
+    """
+    <Purpose>
+      Wait for the child process to pause at the next system call entry/exit.
+      Returns whether or not there IS a next system call (or if the process
+      actually exited)
+
+    <Returns>
+      True if there is a next system call available
+      False if there is not another system call available
+    """
     s = os.wait()
     if os.WIFEXITED(s[1]):
         return False
