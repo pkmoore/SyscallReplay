@@ -101,3 +101,28 @@ class TestStringTimeToInt(unittest.TestCase):
     mock_strptime.assert_called_with(strtime, strptime_format)
     mock_mktime.assert_called_with(strptime_return_value)
     mock_int.assert_called_with(mktime_return_value)
+
+
+
+
+
+class TestStopForDebug(unittest.TestCase):
+
+  @mock.patch('logging.debug')
+  @mock.patch('signal.SIGSTOP')
+  @mock.patch('os.kill')
+  @mock.patch('syscallreplay.util.cint')
+  def TestWithPid(self, mock_syscallreplay, mock_kill, mock_signal, mock_log):
+    """Ensure pausing for debug works correclty when passed a pid
+    <Purpose>
+      Ensure pausing for debug works correctly
+    """
+    pid = 555
+
+    mock_syscallreplay.detach = mock.Mock()
+
+    self.assertRaises(syscallreplay.util.ReplayDeltaError, syscallreplay.util.stop_for_debug, pid)
+
+    mock_log.assert_called()
+    mock_kill.assert_called_with(pid, mock_signal)
+    mock_syscallreplay.detach.assert_called_with(pid)
