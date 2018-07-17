@@ -1,6 +1,10 @@
+#undef _GNU_SOURCE
 #define _GNU_SOURCE
+#undef __USE_LARGEFILE64
 #define __USE_LARGEFILE64
+#undef _LARGEFILE_SOURCE
 #define _LARGEFILE_SOURCE
+#undef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
 
 #include <python2.7/Python.h>
@@ -14,6 +18,7 @@
 #include <stdbool.h>
 #include <sys/select.h>
 #include <sys/stat.h>
+#include <sys/sysmacros.h>
 #include <sys/types.h>
 #include <time.h>
 #include <sys/utsname.h>
