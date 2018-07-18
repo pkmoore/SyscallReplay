@@ -13,9 +13,8 @@
 
 import logging
 
-import syscallreplay
-import syscallreplay.errno_dict as errno_dict
-import syscallreplay.util as util
+import errno_dict
+import util
 
 
 def syscall_return_success_handler(syscall_id, syscall_object, pid):
