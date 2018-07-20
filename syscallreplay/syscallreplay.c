@@ -768,7 +768,7 @@ static PyObject* syscallreplay_populate_timer_t_structure(PyObject* self,
   timer_t id = (timer_t)(unsigned long)timerid;
 
   if (DEBUG) {
-    printf("C: check timer_t: timerid: %d \n", (int)(long)id);
+    printf("C: check timer_t: timerid: %d \n", (int)id);
   }
 
   copy_buffer_into_child_process_memory(child, addr, (unsigned char*)&id, sizeof(id));
@@ -1044,7 +1044,7 @@ static PyObject* syscallreplay_populate_rlimit_structure(PyObject* self,
                      (long long*)&rlim_cur, (long long*)&rlim_max);
     if(DEBUG) {
         printf("C: getrlimit: child %u\n", (int)child);
-        printf("C: getrlimit: addr %u\n", (int)(long)addr);
+        printf("C: getrlimit: addr %u\n", (int)addr);
         printf("C: getrlimit: rlim_cur %lld\n", (long long)rlim_cur);
         printf("C: getrlimit: rlim_max %llx\n", (long long)rlim_max);
         printf("C: getrlimit: sizeof rlimit %zu\n", sizeof(struct rlimit));
@@ -1081,7 +1081,7 @@ static PyObject* syscallreplay_populate_uname_structure(PyObject* self,
                      &nodename, &release, &version, &machine, &domainname);
     if(DEBUG) {
         printf("C: uname: child %u\n", (int)child);
-        printf("C: uname: addr %u\n", (int)(long)addr);
+        printf("C: uname: addr %u\n", (int)addr);
         printf("C: uname: sysname %s\n", sysname);
         printf("C: uname: nodename %s\n", nodename);
         printf("C: uname: release %s\n", release);
@@ -1113,7 +1113,7 @@ static PyObject* syscallreplay_populate_char_buffer(PyObject* self,
                      &data, &data_length);
     if(DEBUG) {
         printf("C: pop_char_buf: child: %u\n", child);
-        printf("C: pop_char_buf: addr: %x\n", (int)(long)addr);
+        printf("C: pop_char_buf: addr: %x\n", (int)addr);
         printf("C: pop_char_buf: data: %s\n", data);
         printf("C: pop_char_buf: data_length %u\n", data_length);
     }
@@ -1184,8 +1184,8 @@ static PyObject* syscallreplay_populate_stack_structure(PyObject* self,
     }
     if(DEBUG) {
         printf("C: populate_stack: child %u\n", (int)child);
-        printf("C: populate_stack: addr: %u\n", (int)(long)addr);
-        printf("C: populate_stack: ss_sp: %u\n", (int)(long)ss_sp);
+        printf("C: populate_stack: addr: %u\n", (int)addr);
+        printf("C: populate_stack: ss_sp: %u\n", (int)ss_sp);
         printf("C: populate_stack: ss_flags: %u\n", (int)ss_flags);
         printf("C: populate_stack: ss_size: %u\n", (unsigned int)ss_size);
     }
@@ -1214,7 +1214,7 @@ static PyObject* syscallreplay_populate_cpu_set(PyObject* self,
     }
     if(DEBUG) {
         printf("C: cpu_set: child: %u\n", (int)child);
-        printf("C: cpu_set: addr: %u\n", (int)(long)addr);
+        printf("C: cpu_set: addr: %u\n", (int)addr);
         printf("C: cpu_set: cpu_value: %u\n", (int)cpu_value);
     }
     cpu_set_t set;
@@ -1234,7 +1234,7 @@ static PyObject* syscallreplay_populate_llseek_result(PyObject* self,
     PyArg_ParseTuple(args, "IIL", (int*)&child, (int*)&addr, (int*)&result);
     if(DEBUG) {
         printf("C: llseek: child: %u\n", (int)child);
-        printf("C: llseek: addr: %u\n", (int)(long)(long)addr);
+        printf("C: llseek: addr: %u\n", (int)addr);
         printf("C: llseek: result: %lld\n", (long long)result);
     }
     copy_buffer_into_child_process_memory(child,
@@ -1287,7 +1287,7 @@ static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
     copy_child_process_memory_into_buffer(child, oldact_addr, (unsigned char*)&oldact, sizeof(oldact));
 
   // Note: cant set handler and sigaction at same time as use same memory
-  oldact.k_sa_handler = (void *)(long)old_sa_handler;
+  oldact.k_sa_handler = (void *)old_sa_handler;
   oldact.sa_flags = old_sa_flags;
   oldact.sa_restorer = old_sa_restorer;
 
@@ -1322,10 +1322,10 @@ static PyObject* syscallreplay_populate_rt_sigaction_struct(PyObject* self,
 
    if (DEBUG) {
      printf("C: Read sigaction: sigaction at %p \n", (void *)&test);
-     printf("C: Read sigaction: sa_handler %p at %p \n", (void *)(long)test.k_sa_handler, (void *)&(test.k_sa_handler));
-     printf("C: Read sigaction: sa_flags %p at %p \n", (void *)(long)test.sa_flags, (void *)&(test.sa_flags));
+     printf("C: Read sigaction: sa_handler %p at %p \n", (void *)test.k_sa_handler, (void *)&(test.k_sa_handler));
+     printf("C: Read sigaction: sa_flags %p at %p \n", (void *)test.sa_flags, (void *)&(test.sa_flags));
      printf("C: Read sigaction: sa_mask at %p \n", (void *)&test.sa_mask);
-     printf("C: Read sigaction: sa_restorer %p at %p \n", (void *)(long)test.sa_restorer, (void *)&(test.sa_restorer));
+     printf("C: Read sigaction: sa_restorer %p at %p \n", (void *)test.sa_restorer, (void *)&(test.sa_restorer));
    }
 
   Py_RETURN_NONE;
@@ -1998,7 +1998,7 @@ static PyObject* syscallreplay_write_sendmmsg_lengths(PyObject* self,
     }
     if(DEBUG) {
         printf("C: sendmmsg_lengths: child: %u\n", child);
-        printf("C: sendmmsg_lengths: addr: %x\n", (int)(long)addr);
+        printf("C: sendmmsg_lengths: addr: %x\n", (int)addr);
         printf("C: sendmmsg_lengths: num: %zu\n", num);
     }
     if(!PyList_Check(list_of_lengths)) {
