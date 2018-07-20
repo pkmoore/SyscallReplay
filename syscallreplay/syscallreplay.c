@@ -1256,11 +1256,11 @@ static PyObject *syscallreplay_populate_rt_sigaction_struct(PyObject *self,
   struct ksigaction oldact;
   void *        oldact_addr;
   int           old_sa_handler; // this could also be void *but not yet implemented
-  PyObject *   mask_sig_list;
+  PyObject     *mask_sig_list;
   sigset_t      old_sa_mask;
   unsigned int  old_sa_flags;
-  void *        old_sa_restorer;  // no longer used, but in sigaction struct when VDSO off
-  //  void *    old_sa_sigaction = NULL; // use not implemented yet, see kernelhandlers.py
+  void         *old_sa_restorer;  // no longer used, but in sigaction struct when VDSO off
+  /* void         *old_sa_sigaction = NULL; // use not implemented yet, see kernelhandlers.py */
 
   bool argument_population_failed = !PyArg_ParseTuple(args,
                                                       "IIIOII",
