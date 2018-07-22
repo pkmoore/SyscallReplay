@@ -139,16 +139,6 @@ def next_syscall():
     return True
 
 
-def offset_file_descriptor(fd):
-    '''Account for stdin, stdout, and stderr when we are predicting what file
-    descriptor the OS will try to hand to our child process.
-
-    TODO: IS THIS CODE NEEDED ANYMORE?  IF NOT, REMOVE IT.
-    '''
-    # The -3 is to account for stdin, stdout, stderr
-    return fd - (len(tracereplay.REPLAY_FILE_DESCRIPTORS) - 3)
-
-
 def extract_socketcall_parameters(pid, address, num):
     '''Socket subcall parameters are passed as an array of integers of some
     length pointed to by the address in ECX at the time the socket_subcall
