@@ -140,11 +140,17 @@ def next_syscall():
 
 
 def extract_socketcall_parameters(pid, address, num):
-    '''Socket subcall parameters are passed as an array of integers of some
-    length pointed to by the address in ECX at the time the socket_subcall
-    system call is made.  This code picks them out and returns them as a list
-    of integers.
-    '''
+    """
+    <Purpose>
+      Socket subcall parameters are passed as an array of integers of some
+      length pointed to by the address in ECX at the time the socket_subcall
+      system call is made.  This code picks them out and returns them as a list
+      of integers.
+
+    <Returns>
+      List of socketcall parameters extracted from PID's memory at address
+
+    """
     params = []
     for i in range(num):
         params += [cint.peek_address(pid, address)]
