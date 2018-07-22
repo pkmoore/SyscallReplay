@@ -227,3 +227,36 @@ class TestNextSyscall(unittest.TestCase):
 
     mock_wait.assert_called()
     mock_exited.assert_called_with(True)
+
+
+
+
+
+class TestExtractSocketcallParameters(unittest.TestCase):
+
+  @mock.patch('logging.debug')
+  @mock.patch('syscallreplay.util.cint')
+  def test_extract_parameters(self, mock_syscallreplay, mock_logging):
+    """Ensure parameters are extracted correctly
+    <Purpose>
+      Make sure parameters are correctly extracted
+
+
+    """
+    pid = 555
+    num_params = 6
+    address = 0xbf000000
+    fake_params = [1, 2, 3, 0xa, 0xb, 0xc]
+
+    mock_syscallreplay.peek_address = mock.Mock(side_effect=iter(fake_params))
+    peek_calls = [mock.call(555, address),
+                  mock.call(555, address+4),
+                  mock.call(555, address+8),
+                  mock.call(555, address+12),
+                  mock.call(555, address+16),
+                  mock.call(555, address+20)]
+
+    self.assertEqual(syscallreplay.util.extract_socketcall_parameters(pid, address, num_params),
+                     fake_params)
+    mock_syscallreplay.peek_address.assert_has_calls(peek_calls)
+    mock_logging.assert_called()
