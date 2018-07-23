@@ -167,42 +167,45 @@ def validate_syscall(syscall_id, syscall_object):
 
     TODO: reduce the number of hacks for name discrepancies somehow.
     '''
-    if syscall_id == 192 and 'mmap' in syscall_object.name:
-        return
-    if syscall_id == 140 and 'llseek' in syscall_object.name:
-        return
-    if syscall_id == 268 and 'stat' in syscall_object.name:
-        return
-    if syscall_id == 199 and 'getuid' in syscall_object.name:
-        return
-    if syscall_id == 200 and 'getgid' in syscall_object.name:
-        return
-    if syscall_id == 201 and 'geteuid' in syscall_object.name:
-        return
-    if syscall_id == 202 and 'getegid' in syscall_object.name:
-        return
-    if syscall_id == 207 and 'fchown' in syscall_object.name:
-        return
-    if syscall_id == 209 and 'getresuid' in syscall_object.name:
-        return
-    if syscall_id == 211 and 'getresgid' in syscall_object.name:
-        return
-    if syscall_id == 142 and '_newselect' in syscall_object.name:
-        return
+
+    # format system call from syscall_dict for comparison with parameters
+    #   i.e sys_waitpid = waitpid
+    compare_syscall = SYSCALLS[syscall_id][4:]
+
+    # Alan: optimization for long and string-y if blocks for system call validation
+    syscall_map_dict = {
+        192: 'mmap',
+        140: 'llseek',
+        268: 'stat',
+        199: 'getuid',
+        200: 'getgid',
+        201: 'geteuid',
+        202: 'getegid',
+        207: 'fchown',
+        209: 'getresuid',
+        211: 'getresgid',
+        142: '_newselect',
+    }
+
+    for id, syscall_name in syscall_map_dict.iteritems():
+        if syscall_id == id and syscall_name in syscall_object.name:
+            return
+
     # HACK: Workaround for stat-lstat ambiguity
-    if(syscall_object.name == 'stat64' and
-       SYSCALLS[syscall_id][4:] == 'lstat64'):
+    if syscall_object.name == 'stat64' and compare_syscall == 'lstat64':
         raise ReplayDeltaError('System call validation failed: from '
                                'execution: {0}({1}) is not from '
                                'trace:{2}'
-                               .format(SYSCALLS[syscall_id][4:],
+                               .format(compare_syscall,
                                        syscall_id,
                                        syscall_object.name))
-    if syscall_object.name not in SYSCALLS[syscall_id][4:]:
+
+    # syscall not valid if syscall_name doesn't match compare_syscall
+    if syscall_object.name not in compare_syscall:
         raise ReplayDeltaError('System call validation failed: from '
                                'execution: {0}({1}) is not from '
                                'trace:{2}'
-                               .format(SYSCALLS[syscall_id][4:],
+                               .format(compare_syscall,
                                        syscall_id,
                                        syscall_object.name))
 
@@ -211,11 +214,17 @@ def validate_subcall(subcall_id, syscall_object):
     '''Validate the socket subcall id against the name in the system call
     object. Notice how there's no horrible hacks in here.
     '''
-    if syscall_object.name not in SOCKET_SUBCALLS[subcall_id][4:]:
+
+    # format socket call from syscall_dict for comparison with parameters
+    #   i.e sys_socketpair = socket_pair
+    compare_socketcall = SOCKET_SUBCALLS[subcall_id][4:]
+
+    # socketcall not valid if syscall_name doesn't match compare_socketcall
+    if syscall_object.name not in compare_socketcall:
         raise ReplayDeltaError('Subcall validation failed: from '
                                'execution: {0}({1}) is not from '
                                'trace:{2}'
-                               .format(SOCKET_SUBCALLS[subcall_id][4:],
+                               .format(compare_socketcall,
                                        subcall_id,
                                        syscall_object.name))
 
