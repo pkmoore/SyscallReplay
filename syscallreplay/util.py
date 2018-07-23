@@ -188,8 +188,7 @@ def validate_syscall(syscall_id, syscall_object):
             return
 
     # HACK: Workaround for stat-lstat ambiguity
-    if syscall_object.name == 'stat64' and
-       compare_syscall == 'lstat64':
+    if syscall_object.name == 'stat64' and compare_syscall == 'lstat64':
         raise ReplayDeltaError('System call validation failed: from '
                                'execution: {0}({1}) is not from '
                                'trace:{2}'
