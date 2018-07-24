@@ -444,6 +444,77 @@ def getrlimit_entry_handler(syscall_id, syscall_object, pid):
     apply_return_conditions(pid, syscall_object)
 
 
+def _tcgets_handler(pid, addr, syscall_object):
+    c_iflags = syscall_object.args[2].value
+    c_iflags = int(c_iflags[c_iflags.rfind('=')+1:], 16)
+    c_oflags = syscall_object.args[3].value
+    c_oflags = int(c_oflags[c_oflags.rfind('=')+1:], 16)
+    c_cflags = syscall_object.args[4].value
+    c_cflags = int(c_cflags[c_cflags.rfind('=')+1:], 16)
+    c_lflags = syscall_object.args[5].value
+    c_lflags = int(c_lflags[c_lflags.rfind('=')+1:], 16)
+    c_line = syscall_object.args[6].value
+    c_line = int(c_line[c_line.rfind('=')+1:])
+    if not ('c_cc' in syscall_object.args[-1].value):
+        raise NotImplementedError('Unsupported TCGETS argument format')
+    cc = syscall_object.args[-1].value
+    cc = cc.split('=')[1].strip('"{}')
+    cc = cc.decode('string-escape')
+    logging.debug('pid: %s', pid)
+    logging.debug('Addr: %s', addr)
+    logging.debug('cmd: %s', cmd)
+    logging.debug('c_iflags: %x', c_iflags)
+    logging.debug('c_oflags: %x', c_oflags)
+    logging.debug('c_cflags: %x', c_cflags)
+    logging.debug('c_lflags: %x', c_lflags)
+    logging.debug('c_line: %s', c_line)
+    logging.debug('len(cc): %s', len(cc))
+    cint.populate_tcgets_response(pid, addr, c_iflags, c_oflags,
+                                  c_cflags,
+                                  c_lflags,
+                                  c_line,
+                                  cc)
+
+
+def _fionread_handler(pid, addr, syscall_object):
+    num_bytes = int(syscall_object.args[2].value.strip('[]'))
+    logging.debug('Number of bytes: %d', num_bytes)
+    cint.populate_int(pid, addr, num_bytes)
+
+
+def _tiocgwinsz_handler(pid, addr, syscall_object):
+    ws_row = syscall_object.args[2].value
+    ws_row = int(ws_row.split('=')[1])
+    ws_col = syscall_object.args[3].value
+    ws_col = int(ws_col.split('=')[1])
+    ws_xpixel = syscall_object.args[4].value
+    ws_xpixel = int(ws_xpixel.split('=')[1])
+    ws_ypixel = syscall_object.args[5].value
+    ws_ypixel = int(ws_ypixel.split('=')[1].strip('}'))
+    logging.debug('ws_row: %s', ws_row)
+    logging.debug('ws_col: %s', ws_col)
+    logging.debug('ws_xpixel: %s', ws_xpixel)
+    logging.debug('ws_ypixel: %s', ws_ypixel)
+    cint.populate_winsize_structure(pid,
+                                    addr,
+                                    ws_row,
+                                    ws_col,
+                                    ws_xpixel,
+                                    ws_ypixel)
+
+
+def _fionbio_handler(pid, addr, syscall_object):
+    out_val = int(syscall_object.args[2].value.strip('[]'))
+    out_addr = cint.peek_register(pid, cint.EDX)
+    cint.poke_address(pid, out_addr, out_val)
+
+
+def _tiocgpgrp_handler(pid, addr, syscall_object):
+    pgid = int(syscall_object.args[2].value.strip('[]'))
+    logging.debug('Caller PGID: %d,', pgid)
+    cint.populate_int(pid, addr, pgid)
+
+
 def ioctl_entry_handler(syscall_id, syscall_object, pid):
     """Always replay.
     Checks:
@@ -467,78 +538,28 @@ def ioctl_entry_handler(syscall_id, syscall_object, pid):
         cmd = syscall_object.args[1].value
         cmd_from_exe = cint.peek_register(pid, cint.ECX)
         _validate_ioctl_cmd(cmd, cmd_from_exe)
-        # HACK: this if statement is terrible
-        if not ('TCGETS' in cmd or 'FIONREAD' in cmd or 'TCSETSW' in cmd or
-                'FIONBIO' in cmd or 'TIOCGWINSZ' in cmd or
-                'TIOCSWINSZ' in cmd or 'TCSETSF' in cmd or 'TCSETS' in cmd or
-                'FIOCLEX' in cmd):
-            raise NotImplementedError('Unsupported ioctl command')
-        if 'TIOCGWINSZ' in cmd:
-            ws_row = syscall_object.args[2].value
-            ws_row = int(ws_row.split('=')[1])
-            ws_col = syscall_object.args[3].value
-            ws_col = int(ws_col.split('=')[1])
-            ws_xpixel = syscall_object.args[4].value
-            ws_xpixel = int(ws_xpixel.split('=')[1])
-            ws_ypixel = syscall_object.args[5].value
-            ws_ypixel = int(ws_ypixel.split('=')[1].strip('}'))
-            logging.debug('ws_row: %s', ws_row)
-            logging.debug('ws_col: %s', ws_col)
-            logging.debug('ws_xpixel: %s', ws_xpixel)
-            logging.debug('ws_ypixel: %s', ws_ypixel)
-            cint.populate_winsize_structure(pid,
-                                            addr,
-                                            ws_row,
-                                            ws_col,
-                                            ws_xpixel,
-                                            ws_ypixel)
-        elif 'FIONREAD' in cmd:
-            num_bytes = int(syscall_object.args[2].value.strip('[]'))
-            logging.debug('Number of bytes: %d', num_bytes)
-            cint.populate_int(pid, addr, num_bytes)
+         
+        # Alan: optimized ioctl handler
+        ioctl_handlers = {
+            'TCGETS': _tcgets_handler,
+            'FIONREAD': _fionread_handler,
+            'FIONBIO': _fionbio_handler,
+            'TIOCGWINSZ': _tiocgwinsz_handler,
+            'TIOCGPGRP': _tiocgpgrp_handler
+           #'TCSETSW', _tcsetsw_handler),
+           #'TIOCSWINSZ', _tiocswinsz_handler),
+           #'TCSETSF', _tcsetsf_handler),
+           #'TCSETS', _tcsets_handler),
+           #'FIOCLEX', _fioclex_handler)
+        }
+        
+        # transfer to handler
+        try:
+            ioctl_handlers[cmd](pid, addr, syscall_object)
+        except KeyError:
+            raise NotImplementedError("Unsupport ioctl call with %s flag", cmd)
 
-        elif 'FIONBIO' in cmd:
-            out_val = int(syscall_object.args[2].value.strip('[]'))
-            out_addr = cint.peek_register(pid, cint.EDX)
-            cint.poke_address(pid, out_addr, out_val)
-        elif 'TCGETS' in cmd:
-            c_iflags = syscall_object.args[2].value
-            c_iflags = int(c_iflags[c_iflags.rfind('=')+1:], 16)
-            c_oflags = syscall_object.args[3].value
-            c_oflags = int(c_oflags[c_oflags.rfind('=')+1:], 16)
-            c_cflags = syscall_object.args[4].value
-            c_cflags = int(c_cflags[c_cflags.rfind('=')+1:], 16)
-            c_lflags = syscall_object.args[5].value
-            c_lflags = int(c_lflags[c_lflags.rfind('=')+1:], 16)
-            c_line = syscall_object.args[6].value
-            c_line = int(c_line[c_line.rfind('=')+1:])
-            if not ('c_cc' in syscall_object.args[-1].value):
-                raise NotImplementedError('Unsupported TCGETS argument format')
-            cc = syscall_object.args[-1].value
-            cc = cc.split('=')[1].strip('"{}')
-            cc = cc.decode('string-escape')
-            logging.debug('pid: %s', pid)
-            logging.debug('Addr: %s', addr)
-            logging.debug('cmd: %s', cmd)
-            logging.debug('c_iflags: %x', c_iflags)
-            logging.debug('c_oflags: %x', c_oflags)
-            logging.debug('c_cflags: %x', c_cflags)
-            logging.debug('c_lflags: %x', c_lflags)
-            logging.debug('c_line: %s', c_line)
-            logging.debug('len(cc): %s', len(cc))
-            cint.populate_tcgets_response(pid, addr, c_iflags, c_oflags,
-                                          c_cflags,
-                                          c_lflags,
-                                          c_line,
-                                          cc)
-        else:
-            logging.debug('Got a %s ioctl() call', cmd)
-            logging.debug('WARNING: NO SIDE EFFECTS REPLICATED')
     apply_return_conditions(pid, syscall_object)
-
-
-def ioctl_exit_handler(syscall_id, syscall_object, pid):
-    pass
 
 
 def _ioctl_int_to_flag(i):
