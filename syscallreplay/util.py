@@ -80,7 +80,9 @@ def dump_memory_to_file(pid, addr_start, addr_end, filename):
 
 
 def noop_current_syscall(pid):
-    ''''No-op' out the current system call the child process is trying to
+  """
+  <Purpose>
+    No-op' out the current system call the child process is trying to
     execute by replacing it with a call to getpid() (a system call that takes
     no parameters and has no side effects).  Then, configure ptrace to allow
     the child process to run until it exits this call to getpid() and tell our
@@ -95,7 +97,11 @@ def noop_current_syscall(pid):
     Note: This function leaves the child process in a state of waiting at the
     point just before execution returns to userspace code.
 
-    '''
+  <Returns>
+    Nothing
+
+  """
+
     logging.debug('Nooping the current system call in pid: %s', pid)
     # Transform the current system call in the child process into a call to
     # getpid() by poking 20 into ORIG_EAX
