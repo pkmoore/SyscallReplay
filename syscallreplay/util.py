@@ -288,18 +288,24 @@ def list_of_flags_to_int(lof):
 
 
 def apply_return_conditions(pid, syscall_object):
-    '''Apply the return conditions described in the system call object to the
-    current system call the child process is paused in.  This involves turning
-    whatever madness strace gave as a return value into a suitable integer,
-    transforming that integer to induce the correct errno value (if required),
-    and poking that value into EAX.
+    """
+    <Purpose>
+      Apply the return conditions described in the system call object to the
+      current system call the child process is paused in.  This involves turning
+      whatever madness strace gave as a return value into a suitable integer,
+      transforming that integer to induce the correct errno value (if required),
+      and poking that value into EAX.
 
-    Note: For our Linux and glibc version, we return a value of the form:
-        (-1 * <intended errno value>)
-    in EAX.  Glibc recognizes this situation, sets errno to (-1 * EAX) and sets
-        EAX to -1 thereby producing the "returns -1 on error with errno set
-        correctly" behavior we know and love.
-    '''
+      Note: For our Linux and glibc version, we return a value of the form:
+          (-1 * <intended errno value>)
+      in EAX.  Glibc recognizes this situation, sets errno to (-1 * EAX) and sets
+          EAX to -1 thereby producing the "returns -1 on error with errno set
+          correctly" behavior we know and love.
+    <Returns>
+      Nothing
+
+    """
+
     logging.debug('Applying return conditions')
     ret_val = syscall_object.ret[0]
     # HACK: deal with the way strace reports flags in return values for fcntl
