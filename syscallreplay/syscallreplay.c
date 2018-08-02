@@ -1675,7 +1675,7 @@ void init_constants(PyObject *m) {
     if(PyModule_AddIntConstant(m, "EDI", EDI) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "RBP", RBP) == -1) {
+    if(PyModule_AddIntConstant(m, "EBP", EBP) == -1) {
         return;
     }
 
