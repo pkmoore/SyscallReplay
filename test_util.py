@@ -292,3 +292,34 @@ class TestValidateSyscall(unittest.TestCase):
 
     self.assertRaises(syscallreplay.util.ReplayDeltaError,
                       syscallreplay.util.validate_syscall, syscall_id, syscall_object)
+
+
+
+
+
+class TestValidateSubcall(unittest.TestCase):
+
+  def test_matching_id_and_object(self):
+    """Ensure matching id and object doesn't raise
+    <Purpose>
+      Make sure socket subcall id that matches syscall_object.name doesn't raise
+
+    """
+    subcall_id = 1
+    syscall_object = bunch.Bunch()
+    syscall_object.name = 'socket'
+
+    syscallreplay.util.validate_subcall(subcall_id, syscall_object)
+
+  def test_non_matching_id_and_object(self):
+    """Ensure non-matching id and object doesn't raise
+    <Purpose>
+      Make sure socket subcall id that doesn't match syscall_object.name raises
+
+    """
+    subcall_id = 9
+    syscall_object = bunch.Bunch()
+    syscall_object.name = 'socket'
+
+    self.assertRaises(syscallreplay.util.ReplayDeltaError,
+                      syscallreplay.util.validate_subcall, subcall_id, syscall_object)
