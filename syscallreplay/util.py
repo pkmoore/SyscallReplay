@@ -222,9 +222,14 @@ def validate_syscall(syscall_id, syscall_object):
 
 
 def validate_subcall(subcall_id, syscall_object):
-    '''Validate the socket subcall id against the name in the system call
-    object. Notice how there's no horrible hacks in here.
-    '''
+    """
+    <Purpose>
+      Validate the socket subcall id against the name in the system call
+      object. Notice how there's no horrible hacks in here.
+
+    <Returns>
+      Nothing
+    """
 
     # format socket call from syscall_dict for comparison with parameters
     #   i.e sys_socketpair = socket_pair
