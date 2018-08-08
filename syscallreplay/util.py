@@ -166,13 +166,18 @@ def extract_socketcall_parameters(pid, address, num):
 
 
 def validate_syscall(syscall_id, syscall_object):
-    '''Validate a system call id to make sure it matches the name in the system
-    call object.  This is essentially a fancy dictionary lookup made horrible
-    by discrepencies in the way strace names system calls and the way our Linux
-    kernel names them.
+    """
+    <Purpose>
+      Validate a system call id to make sure it matches the name in the system
+      call object.  This is essentially a fancy dictionary lookup made horrible
+      by discrepencies in the way strace names system calls and the way our Linux
+      kernel names them.
 
-    TODO: reduce the number of hacks for name discrepancies somehow.
-    '''
+      TODO: reduce the number of hacks for name discrepancies somehow.
+
+    <Returns>
+      Nothing
+    """
 
     # format system call from syscall_dict for comparison with parameters
     #   i.e sys_waitpid = waitpid
