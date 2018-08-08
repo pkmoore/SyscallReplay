@@ -259,3 +259,36 @@ class TestExtractSocketcallParameters(unittest.TestCase):
     self.assertEqual(syscallreplay.util.extract_socketcall_parameters(pid, address, num_params), fake_params)
     mock_syscallreplay.peek_address.assert_has_calls(peek_calls)
     mock_logging.assert_called()
+
+
+
+
+
+class TestValidateSyscall(unittest.TestCase):
+
+  def test_matching_id_and_object(self):
+    """Ensure a matching id and object doesn't raise
+    <Purpose>
+      Make sure a system call id that matches syscall_object.name doesn't raise
+
+    """
+    syscall_id = 4
+    syscall_object = bunch.Bunch()
+    syscall_object.name = 'write'
+
+    syscallreplay.util.validate_syscall(syscall_id, syscall_object)
+
+
+  def test_non_matching_id_and_object(self):
+    """Ensure non-matching id and object DO raise
+    <Purpose>
+      Make sure a system call id that does not match syscall_object.name raises
+
+    """
+
+    syscall_id = 5
+    syscall_object = bunch.Bunch()
+    syscall_object.name = 'write'
+
+    self.assertRaises(syscallreplay.util.ReplayDeltaError,
+                      syscallreplay.util.validate_syscall, syscall_id, syscall_object)
