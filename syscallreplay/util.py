@@ -102,30 +102,30 @@ def noop_current_syscall(pid):
 
   """
 
-    logging.debug('Nooping the current system call in pid: %s', pid)
-    # Transform the current system call in the child process into a call to
-    # getpid() by poking 20 into ORIG_EAX
-    cint.poke_register(pid, cint.ORIG_EAX, 20)
-    # Tell ptrace we want the child process to stop at the next system call
-    # event and restart its execution.
-    cint.syscall(pid, 0)
-    # Have our process monitor the execution of the child process until it
-    # receives a system call event notification.  The notification we receive
-    # at this point (if all goes according to plan) is the EXIT notification
-    # for the getpid() call we forced the application to make.
-    next_syscall()
-    # Take a look at the current system call (i.e. the one that triggered the
-    # notification we just received from ptrace).  It should be getpid().  If
-    # it isnt, something has gone horribly wrong and we must bail out.
-    skipping = cint.peek_register(pid, cint.ORIG_EAX)
-    if skipping != 20:
-        raise Exception('Nooping did not result in getpid exit. Got {}'
-                        .format(skipping))
-    # Because we are exiting the getpid() call so we need to set the entering
-    # flip-flop flag to reflect this.  This allows later code (in main.py) to
-    # set it BACK to entering before we begin processing the entry for the next
-    # system call.
-    cint.entering_syscall = False
+  logging.debug('Nooping the current system call in pid: %s', pid)
+  # Transform the current system call in the child process into a call to
+  # getpid() by poking 20 into ORIG_EAX
+  cint.poke_register(pid, cint.ORIG_EAX, 20)
+  # Tell ptrace we want the child process to stop at the next system call
+  # event and restart its execution.
+  cint.syscall(pid, 0)
+  # Have our process monitor the execution of the child process until it
+  # receives a system call event notification.  The notification we receive
+  # at this point (if all goes according to plan) is the EXIT notification
+  # for the getpid() call we forced the application to make.
+  next_syscall()
+  # Take a look at the current system call (i.e. the one that triggered the
+  # notification we just received from ptrace).  It should be getpid().  If
+  # it isnt, something has gone horribly wrong and we must bail out.
+  skipping = cint.peek_register(pid, cint.ORIG_EAX)
+  if skipping != 20:
+    raise Exception('Nooping did not result in getpid exit. Got {}'
+                    .format(skipping))
+  # Because we are exiting the getpid() call so we need to set the entering
+  # flip-flop flag to reflect this.  This allows later code (in main.py) to
+  # set it BACK to entering before we begin processing the entry for the next
+  # system call.
+  cint.entering_syscall = False
 
 
 def next_syscall():
