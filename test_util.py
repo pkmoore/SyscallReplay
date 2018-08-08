@@ -58,7 +58,7 @@ class TestStringTimeToInt(unittest.TestCase):
   def test_zero_strtime(self, mock_log):
     """Ensure '0' strtime returns 0
     <Purpose>
-        Ensure that a string time of 0 passed in returns the int 0
+      Ensure that a string time of 0 passed in returns the int 0
 
     """
     strtime = '0'
@@ -256,7 +256,6 @@ class TestExtractSocketcallParameters(unittest.TestCase):
                   mock.call(555, address+16),
                   mock.call(555, address+20)]
 
-    self.assertEqual(syscallreplay.util.extract_socketcall_parameters(pid, address, num_params),
-                     fake_params)
+    self.assertEqual(syscallreplay.util.extract_socketcall_parameters(pid, address, num_params), fake_params)
     mock_syscallreplay.peek_address.assert_has_calls(peek_calls)
     mock_logging.assert_called()
