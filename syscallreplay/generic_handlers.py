@@ -16,6 +16,7 @@ import logging
 import errno_dict
 import util
 
+import syscallreplay
 
 def syscall_return_success_handler(syscall_id, syscall_object, pid):
   """
