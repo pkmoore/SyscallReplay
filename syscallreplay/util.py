@@ -129,40 +129,40 @@ def noop_current_syscall(pid):
 
 
 def next_syscall():
-    """
-    <Purpose>
-      Wait for the child process to pause at the next system call entry/exit.
-      Returns whether or not there IS a next system call (or if the process
-      actually exited)
+  """
+  <Purpose>
+    Wait for the child process to pause at the next system call entry/exit.
+    Returns whether or not there IS a next system call (or if the process
+    actually exited)
 
-    <Returns>
-      True if there is a next system call available
-      False if there is not another system call available
-    """
-    s = os.wait()
-    if os.WIFEXITED(s[1]):
-        return False
-    return True
+  <Returns>
+    True if there is a next system call available
+    False if there is not another system call available
+  """
+  s = os.wait()
+  if os.WIFEXITED(s[1]):
+      return False
+  return True
 
 
 def extract_socketcall_parameters(pid, address, num):
-    """
-    <Purpose>
-      Socket subcall parameters are passed as an array of integers of some
-      length pointed to by the address in ECX at the time the socket_subcall
-      system call is made.  This code picks them out and returns them as a list
-      of integers.
+  """
+  <Purpose>
+    Socket subcall parameters are passed as an array of integers of some
+    length pointed to by the address in ECX at the time the socket_subcall
+    system call is made.  This code picks them out and returns them as a list
+    of integers.
 
-    <Returns>
-      List of socketcall parameters extracted from PID's memory at address
+  <Returns>
+    List of socketcall parameters extracted from PID's memory at address
 
-    """
-    params = []
-    for i in range(num):
-        params += [cint.peek_address(pid, address)]
-        address = address + 4
-    logging.debug('Extracted socketcall parameters: %s', params)
-    return params
+  """
+  params = []
+  for i in range(num):
+      params += [cint.peek_address(pid, address)]
+      address = address + 4
+  logging.debug('Extracted socketcall parameters: %s', params)
+  return params
 
 
 def validate_syscall(syscall_id, syscall_object):
