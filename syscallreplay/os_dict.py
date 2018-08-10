@@ -1,5 +1,12 @@
-"""Various dictionaies mapping pretty flags from strace to the values to which
-they correspond
+"""
+<Program Name>
+  os_dict
+
+<Purpose>
+  Provides various dictionaries mapping pretty flags from strace to the values 
+  to which they correspond. This allows other system call handlers that allow
+  to retrieve the proper flag from a seemingly generic strace value.
+
 """
 
 OS_CONST = {

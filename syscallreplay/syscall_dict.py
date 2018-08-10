@@ -1,3 +1,13 @@
+"""
+<Program Name>
+  syscall_dict
+
+<Purpose>
+  Provides dictionaries that map both syscall and socketcall IDs to their respective
+  system call names.
+
+"""
+
 SYSCALLS = {
     0: 'sys_restart_syscall',
     1: 'sys_exit',
