@@ -505,12 +505,18 @@ def update_socketcall_paramater(pid, params_addr, pos, value):
                                .format(p[pos], value))
 
 
-def find_arg_matching_string(args, s):
-    r = [(x, y.value) for x, y in enumerate(args) if s in y.value]
-    if len(r) > 1:
-        raise ReplayDeltaError('Found more than one arg for specified string '
-                               '({}) ({})'.format(r, s))
-    return r
+def find_arg_matching_string(args, arg_to_find):
+  args_found = []
+  for arg_index, arg_value in enumerate(args):
+    arg_value.value = arg_value.value.strip('{}')
+    if arg_to_find == arg_value.value[:arg_value.value.rfind('=')]:
+      args_found.append((arg_index, arg_value.value))
+  if len(args_found) > 1:
+    import pdb
+    pdb.set_trace()
+    raise ReplayDeltaError('Found more than one arg for specified string '
+                           '({}) ({})'.format(args_found, arg_to_find))
+  return args_found
 
 
 def get_stack_start_and_end(pid):

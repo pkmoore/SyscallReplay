@@ -8,6 +8,7 @@ Handlers for socket subcalls
 
 from __future__ import print_function
 from time import strptime, mktime
+import re
 
 from getdents_parser import parse_getdents_structure
 from os_dict import FCNTL64_INT_TO_CMD
@@ -858,6 +859,28 @@ def fstat64_entry_handler(syscall_id, syscall_object, pid):
     _handle_statlike_call(syscall_id, syscall_object, pid)
 
 
+def _parse_statlike_call_time(value):
+  """
+  <Purpose>
+    Strace presents timestamp values differently depending on your system.
+    This function attempts to detect which format is in use and parse it
+    correctly.  This is likely to be a source of bugs.
+
+  <Returns>
+    The integer time value expected by _handle_statlike_call
+  """
+
+  # \d the integer part
+  #   followed by a space
+  # /* followed by the C block comment syntax
+  int_with_comment = re.compile(r"""\d* /\*""")
+  # if we have the "int_with_comment" stylel, just take the integer part
+  if int_with_comment.match(value):
+    return int(value.split(' ')[0])
+
+  # Otherwise, we try the standard parsing we've used in the past
+  return string_time_to_int(value)
+
 def _handle_statlike_call(syscall_id_, syscall_object, pid):
     buf_addr = cint.peek_register_unsigned(pid, cint.ECX)
     logging.debug('ECX: %x', buf_addr)
@@ -956,20 +979,20 @@ def _handle_statlike_call(syscall_id_, syscall_object, pid):
         r = find_arg_matching_string(syscall_object.args[1:], 'st_atime')
         idx, arg = r[0]
         value = arg.split('=')[1]
-        st_atime = string_time_to_int(value)
+        st_atime = _parse_statlike_call_time(value)
         logging.debug('st_atime: %d', st_atime)
 
         # st_mtime
         r = find_arg_matching_string(syscall_object.args[1:], 'st_mtime')
         idx, arg = r[0]
-        st_mtime = string_time_to_int(value)
+        st_mtime = _parse_statlike_call_time(value)
         logging.debug('st_mtime: %d', st_mtime)
 
         # st_ctime
         r = find_arg_matching_string(syscall_object.args[1:], 'st_ctime')
         idx, arg = r[0]
         value = arg.split('=')[1].strip('}')
-        st_ctime = string_time_to_int(value)
+        st_ctime = _parse_statlike_call_time(value)
         logging.debug('st_ctime: %d', st_ctime)
 
         logging.debug('pid: %d', pid)
