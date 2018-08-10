@@ -2,7 +2,7 @@
 # unused arguments, too many lines
 
 """
-Handlers for socket subcalls
+Handlers for file-related system calls
 """
 
 
