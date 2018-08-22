@@ -8,4 +8,4 @@ install:
 
 script:
   - nosetests
-  - python setup.py build
+  - "docker run -i -v \"${PWD}:/scr\" toopher/centos-i386:centos6 /bin/bash -c \"linux32 --32bit i386 python /scr/setup.py build\""
