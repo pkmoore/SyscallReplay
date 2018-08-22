@@ -8,4 +8,4 @@ install:
 
 script:
   - nosetests
-  - "docker run -i -v \"${PWD}:/scr\" toopher/centos-i386:centos6 /bin/bash -c \"linux32 --32bit i386 python /scr/setup.py build\""
+  - "docker run -i -v \"${PWD}:/scr\" toopher/centos-i386:centos6 /bin/bash -c \"linux32 --32bit i386 git clone https://github.com/pkmoore/syscallreplay && cd syscallreplay && pip install requirements.txt && python /scr/setup.py build\""
