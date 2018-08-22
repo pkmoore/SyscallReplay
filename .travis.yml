@@ -7,3 +7,4 @@ install:
 
 script:
   - nosetests
+  - python setup.py build
