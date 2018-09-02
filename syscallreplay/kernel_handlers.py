@@ -462,7 +462,6 @@ def _tcgets_handler(pid, addr, syscall_object):
     cc = cc.decode('string-escape')
     logging.debug('pid: %s', pid)
     logging.debug('Addr: %s', addr)
-    logging.debug('cmd: %s', cmd)
     logging.debug('c_iflags: %x', c_iflags)
     logging.debug('c_oflags: %x', c_oflags)
     logging.debug('c_cflags: %x', c_cflags)
