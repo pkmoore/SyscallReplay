@@ -37,6 +37,7 @@
 #include <sys/uio.h>
 #include <inttypes.h>
 #include <sys/epoll.h>
+#include <string.h>
 
 struct kepoll_event {
     uint32_t events;
@@ -109,32 +110,32 @@ int copy_child_process_memory_into_buffer(pid_t child,
     if(DEBUG) {
         printf("C: peek_buffer: number of peeks: %zu\n", peeks);
     }
-    // Special case for buffers smaller than one 4 byte write
-    if(buf_length < 4) {
+    // Special case for buffers smaller than one int-sized write
+    if(buf_length < sizeof(int)) {
         if(DEBUG) {
             printf("C: peek_buffer: got a small peek\n");
         }
-        unsigned char temp_buffer[4];
-        *((int *)&temp_buffer) = ptrace(PTRACE_PEEKDATA, child, addr, NULL);
+        union {
+            unsigned int data;
+            unsigned char bytes[sizeof(int)];
+        } temp_buffer = {0};
+        size_t num_rest = sizeof temp_buffer - buf_length;
+        temp_buffer.data = ptrace(PTRACE_PEEKDATA, child, addr, NULL);
         if(DEBUG) {
             printf("Peeked data: ");
-            for(i = 0; i < 4; i++) {
-                printf("%02X ", temp_buffer[i]);
+            for(i = 0; i < sizeof temp_buffer; i++) {
+                printf("%02X ", temp_buffer.bytes[i]);
             }
             printf("\n");
         }
-        for(i = sizeof(int); i > buf_length; i--) {
-            temp_buffer[i-1] = buf_addr[i-1];
-        }
+        memcpy(buf_addr, temp_buffer.bytes, buf_length);
+        memcpy(temp_buffer.bytes + buf_length, buf_addr + buf_length, num_rest);
         if(DEBUG) {
             printf("'Diff'd data: ");
-            for(i = 0; i < 4; i++) {
-                printf("%02X ", temp_buffer[i]);
+            for(i = 0; i < sizeof temp_buffer; i++) {
+                printf("%02X ", temp_buffer.bytes[i]);
             }
             printf("\n");
-        }
-        for(i = 0; i < buf_length; i++) {
-            buf_addr[i] = temp_buffer[i];
         }
     }
     else {
