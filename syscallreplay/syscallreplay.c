@@ -1655,28 +1655,28 @@ static PyObject *syscallreplay_disable_debug_output(PyObject *self, PyObject *ar
 }
 
 void init_constants(PyObject *m) {
-    if(PyModule_AddIntConstant(m, "ORIG_EAX", ORIG_EAX) == -1) {
+    if(PyModule_AddIntConstant(m, "ORIG_RAX", ORIG_RAX) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "EAX", EAX) == -1) {
+    if(PyModule_AddIntConstant(m, "RAX", RAX) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "EBX", EBX) == -1) {
+    if(PyModule_AddIntConstant(m, "RBX", RBX) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "ECX", ECX) == -1) {
+    if(PyModule_AddIntConstant(m, "RCX", RCX) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "EDX", EDX) == -1) {
+    if(PyModule_AddIntConstant(m, "RDX", RDX) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "ESI", ESI) == -1) {
+    if(PyModule_AddIntConstant(m, "RSI", RSI) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "EDI", EDI) == -1) {
+    if(PyModule_AddIntConstant(m, "RDI", RDI) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "EBP", EBP) == -1) {
+    if(PyModule_AddIntConstant(m, "RBP", RBP) == -1) {
         return;
     }
 
