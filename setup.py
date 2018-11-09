@@ -5,7 +5,7 @@ from distutils.core import setup, Extension
 
 SYSCALLREPLAY_MOD = Extension('syscallreplay.syscallreplay',
                               ['syscallreplay/syscallreplay.c'],
-                              extra_compile_args=['-Wall', '--std=c11'])
+                              extra_compile_args=['-m32', '-Wall', '--std=c11'])
 
 setup(name='syscallreplay',
       version='0.1',
