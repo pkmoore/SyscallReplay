@@ -757,17 +757,8 @@ def openat_entry_handler(syscall_id, syscall_object, pid):
                     'file name from trace ({})'.format(fn_from_execution,
                                                        fn_from_trace))
   fd_from_trace = int(syscall_object.ret[0])
-  if fd_from_trace == -1 or not is_file_mmapd_at_any_time(fn_from_trace):
-    if fd_from_trace == -1:
-      logging.debug('This is an unsuccessful open call. We will replay it')
-    else:
-      logging.debug('File descriptor is not mmap\'d before it is closed '
-                    'so we will replay it')
-      add_replay_fd(fd_from_trace)
-    noop_current_syscall(pid)
-    apply_return_conditions(pid, syscall_object)
-  else:
-    logging.debug('Resultant file descriptor is mmap\'d before close. Will not replay')
+  noop_current_syscall(pid)
+  apply_return_conditions(pid, syscall_object)
 
 
 def openat_exit_handler(syscall_id, syscall_object, pid):
