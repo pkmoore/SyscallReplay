@@ -748,7 +748,7 @@ def open_exit_handler(syscall_id, syscall_object, pid):
 def openat_entry_handler(syscall_id, syscall_object, pid):
   logging.debug('Entering openat entry handler')
   ecx = cint.peek_register(pid, cint.ECX)
-  fn_from_execution = peek_string(pid, ecx)
+  fn_from_execution = cint.copy_string(pid, ECX))
   fn_from_trace = syscall_object.args[1].value.strip('"')
   logging.debug('Filename from trace: %s', fn_from_trace)
   logging.debug('Filename from execution: %s', fn_from_execution)
