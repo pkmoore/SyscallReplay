@@ -406,13 +406,23 @@ def gettimeofday_entry_handler(syscall_id, syscall_object, pid):
   logging.debug('Entering gettimeofday entry handler')
   if syscall_object.ret[0] == -1:
     raise NotImplementedError('Unsuccessful calls not implemented')
+  elif syscall_object.args[2].value != 'NULL':
+      raise NotImplementedError('time zones not implemented')
   else:
     util.noop_current_syscall(pid)
-    if syscall_object.args[2].value != 'NULL':
-      raise NotImplementedError('time zones not implemented')
     addr = util.cint.peek_register_unsigned(pid, util.cint.EBX)
-    seconds = int(syscall_object.args[0].value.strip('{}'))
-    microseconds = int(syscall_object.args[1].value.strip('{}'))
+    seconds = syscall_object.args[0].value.strip('{}, ')
+    # gettimeofday() call might have the tv_sec and tv_usec labels in the
+    # output structure.  If it does, we need to split() it off.
+    if 'tv_sec' in seconds:
+      seconds = seconds.split('=')[1]
+    seconds = int(seconds)
+    # gettimeofday() call might have the tv_sec and tv_usec labels in the
+    # output structure.  If it does, we need to split() it off.
+    microseconds = syscall_object.args[1].value.strip('{}')
+    if 'tv_usec' in microseconds:
+      microseconds = microseconds.split('=')[1]
+    microseconds = int(microseconds)
     logging.debug('Address: %x', addr)
     logging.debug('Seconds: %d', seconds)
     logging.debug('Microseconds: %d', microseconds)
