@@ -537,7 +537,7 @@ def readlink_entry_handler(syscall_id, syscall_object, pid):
   logging.debug('Entering readlink entry handler')
   ebx = cint.peek_register(pid, cint.EBX)
   # Check the filename
-  fn_from_execution = peek_string(pid, ebx)
+  fn_from_execution = cint.copy_string(pid, ebx)
   fn_from_trace = cleanup_quotes(syscall_object.args[0].value)
   if fn_from_execution != fn_from_trace:
     raise ReplayDeltaError('File name from execution ({}) does not match '
