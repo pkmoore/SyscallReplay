@@ -186,11 +186,12 @@ int copy_buffer_into_child_process_memory(pid_t child,
         if(DEBUG) {
             printf("C: copy_buffer: got a small write\n");
         }
-        unsigned char temp_buffer[4];
-        *((int *)&temp_buffer) = (int)ptrace(PTRACE_PEEKDATA, child, addr, NULL);
+        unsigned char temp_buffer[sizeof(long)] = {0};
+        long res = ptrace(PTRACE_PEEKDATA, child, addr, NULL);
+        memcpy(temp_buffer, &res, sizeof res);
         if(DEBUG) {
             printf("Peeked data: ");
-            for(i = 0; i < 4; i++) {
+            for(i = 0; i < sizeof(long); i++) {
                 printf("%02X ", temp_buffer[i]);
             }
             printf("\n");
@@ -200,12 +201,12 @@ int copy_buffer_into_child_process_memory(pid_t child,
         }
         if(DEBUG) {
             printf("'Diff'd data: ");
-            for(i = 0; i < 4; i++) {
+            for(i = 0; i < sizeof(long); i++) {
                 printf("%02X ", temp_buffer[i]);
             }
             printf("\n");
         }
-        if((ptrace(PTRACE_POKEDATA, child, addr, *((int *)&temp_buffer)) == -1)) {
+        if((ptrace(PTRACE_POKEDATA, child, addr, (long *)temp_buffer) == -1)) {
             PyErr_SetString(SyscallReplayError,
                             "Failed to poke small buffer in copy buffer");
         }
