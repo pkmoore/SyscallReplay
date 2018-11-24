@@ -1,3 +1,34 @@
+# [x86-32]
+# The %eax register for syscall_number and %ebx, %ecx, %edx, %esi, %edi, and %ebp
+# for passing 6 parameters.
+#
+# The return value is in %eax. All other registers (including EFLAGS) are
+# preserved across the int $0x80.
+#
+# [x86-64]
+# The %rax register for syscall_number and %rdi, %rsi, %rdx, %rcx, %r8 and %r9
+# are the registers (in order) used to pass integer/pointer (i.e. INTEGER class)
+# parameters to any libc function from assembly. %rdi is used for the first
+# INTEGER parameter. %rsi for 2nd, %rdx for 3rd and so on. Then call instruction
+# should be given. The stack (%rsp) must be 16B-aligned when call executes.
+#
+# If there are more than 6 INTEGER parameters, the 7th INTEGER parameter and
+# later are passed on the stack. (Caller pops, same as x86-32.)
+#
+# The first 8 floating point args are passed in %xmm0-7, later on the stack.
+# There are no call-preserved vector registers. (A function with a mix of FP
+# and integer arguments can have more than 8 total register arguments.)
+#
+# Variadic functions (like printf) always need %al = the number of FP register
+# args.
+#
+# There are rules for when to pack structs into registers (rdx:rax on return)
+# vs. in memory. See the ABI for details, and check compiler output to make
+# sure your code agrees with compilers about how something should be
+# passed/returned.
+#
+# -jp
+
 from __future__ import print_function
 
 import sys
