@@ -100,33 +100,33 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('New map end: %x', last_map_end + new_map_size)
 
     # Preserve the registers mmap uses for parameters
-    save_EBX  = cint.peek_register(pid, cint.EBX)
-    save_ECX  = cint.peek_register(pid, cint.ECX)
-    save_EDX  = cint.peek_register(pid, cint.EDX)
-    save_ESI  = cint.peek_register(pid, cint.ESI)
-    save_EDI  = cint.peek_register(pid, cint.EDI)
-    save_EBP  = cint.peek_register(pid, cint.EBP)
+    save_RDI  = cint.peek_register(pid, cint.RDI)
+    save_RSI  = cint.peek_register(pid, cint.RSI)
+    save_RDX  = cint.peek_register(pid, cint.RDX)
+    save_RCX  = cint.peek_register(pid, cint.RCX)
+    save_R8  = cint.peek_register(pid, cint.R8)
+    save_R9  = cint.peek_register(pid, cint.R9)
 
 
     # transform current system call to mmap
     cint.poke_register(pid, cint.ORIG_EAX, 192)
     cint.poke_register(pid, cint.EAX, 192)
     # Where to start our new mapping from
-    cint.poke_register(pid, cint.EBX, last_map_end)
+    cint.poke_register(pid, cint.RDI, last_map_end)
     # How big of a mapping do we want
-    cint.poke_register(pid, cint.ECX, new_map_size)
+    cint.poke_register(pid, cint.RSI, new_map_size)
     # PROT options
     prot = 3 #cint.injected_state['brks'][-1]['prot']
-    cint.poke_register(pid, cint.EDX, prot)
+    cint.poke_register(pid, cint.RDX, prot)
     # Flags options
     flags = 2 #cint.injected_state['brks'][-1]['flags']
     flags |= 32
     flags |= 16
-    cint.poke_register(pid, cint.ESI, flags)
+    cint.poke_register(pid, cint.RCX, flags)
     # fd
-    cint.poke_register(pid, cint.EDI, -1)
+    cint.poke_register(pid, cint.R8, -1)
     # offset
-    cint.poke_register(pid, cint.EBP, 0)
+    cint.poke_register(pid, cint.R9, 0)
 
     # Advance to our crafted mmap's exit
     cint.syscall(pid, 0)
@@ -139,12 +139,12 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
                                         u'size': new_map_size})
 
    # restore registers
-    cint.poke_register(pid, cint.EBX, save_EBX)
-    cint.poke_register(pid, cint.ECX, save_ECX)
-    cint.poke_register(pid, cint.EDX, save_EDX)
-    cint.poke_register(pid, cint.ESI, save_ESI)
-    cint.poke_register(pid, cint.EDI, save_EDI)
-    cint.poke_register(pid, cint.EBP, save_EBP)
+    cint.poke_register(pid, cint.RDI, save_RDI)
+    cint.poke_register(pid, cint.RSI, save_RSI)
+    cint.poke_register(pid, cint.RDX, save_RDX)
+    cint.poke_register(pid, cint.RCX, save_RCX)
+    cint.poke_register(pid, cint.R8, save_R8)
+    cint.poke_register(pid, cint.R9, save_R9)
 
     apply_return_conditions(pid, syscall_object)
     cint.entering_syscall = False
@@ -165,12 +165,12 @@ def _check_flags_and_prot(brks):
 def _brk_debug_print_regs(pid):
     print('ORIG_EAX: ', cint.peek_register(pid, cint.ORIG_EAX))
     print('EAX: ', cint.peek_register(pid, cint.EAX))
-    print('EBX: ', cint.peek_register(pid, cint.EBX))
-    print('ECX: ', cint.peek_register(pid, cint.ECX))
-    print('EDX: ', cint.peek_register(pid, cint.EDX))
-    print('ESI: ', cint.peek_register(pid, cint.ESI))
-    print('EDI: ', cint.peek_register(pid, cint.EDI))
-    print('EBP: ', cint.peek_register(pid, cint.EBP))
+    print('RDI: ', cint.peek_register(pid, cint.RDI))
+    print('RSI: ', cint.peek_register(pid, cint.RSI))
+    print('RDX: ', cint.peek_register(pid, cint.RDX))
+    print('RCX: ', cint.peek_register(pid, cint.RCX))
+    print('R8: ', cint.peek_register(pid, cint.R8))
+    print('R9: ', cint.peek_register(pid, cint.R9))
 
 def brk_exit_handler(syscall_id, syscall_object, pid):
     """Never Replay.  Only check the return value and WARN if it is
@@ -237,7 +237,7 @@ def rt_sigaction_entry_handler(syscall_id, syscall_object, pid):
         # old_sa_sigaction = 0   # void (int, siginfo_t*, void*) Serves as an alternate for old_sa_handler but yet to be seen or implemented
 
         # buffer address
-        old_action_addr = cint.peek_register(pid, cint.EDX)
+        old_action_addr = cint.peek_register(pid, cint.RDX)
         logging.debug("Old Action Address: 0x%x" % (old_action_addr & 0xffffffff))
 
         # done with registers so can noop now
@@ -318,9 +318,9 @@ def getresuid_entry_handler(syscall_id, syscall_object, pid):
     ruid = int(syscall_object.args[0].value.strip('[]'))
     euid = int(syscall_object.args[0].value.strip('[]'))
     suid = int(syscall_object.args[0].value.strip('[]'))
-    ruid_addr = cint.peek_register(pid, cint.EBX)
-    euid_addr = cint.peek_register(pid, cint.ECX)
-    suid_addr = cint.peek_register(pid, cint.EDX)
+    ruid_addr = cint.peek_register(pid, cint.RDI)
+    euid_addr = cint.peek_register(pid, cint.RSI)
+    suid_addr = cint.peek_register(pid, cint.RDX)
 
     logging.debug('ruid: %d', ruid)
     logging.debug('euid: %d', euid)
@@ -342,9 +342,9 @@ def getresgid_entry_handler(syscall_id, syscall_object, pid):
     ruid = int(syscall_object.args[0].value.strip('[]'))
     euid = int(syscall_object.args[0].value.strip('[]'))
     suid = int(syscall_object.args[0].value.strip('[]'))
-    ruid_addr = cint.peek_register(pid, cint.EBX)
-    euid_addr = cint.peek_register(pid, cint.ECX)
-    suid_addr = cint.peek_register(pid, cint.EDX)
+    ruid_addr = cint.peek_register(pid, cint.RDI)
+    euid_addr = cint.peek_register(pid, cint.RSI)
+    suid_addr = cint.peek_register(pid, cint.RDX)
 
     logging.debug('ruid: %d', ruid)
     logging.debug('euid: %d', euid)
@@ -366,7 +366,7 @@ def set_tid_address_entry_handler(syscall_id, syscall_object, pid):
     # POSIX-omni-parser treats this argument as a hex string with no 0x
     # We have to do manual cleanup here
     addr_from_trace = int('0x' + syscall_object.args[0].value, 16)
-    addr_from_execution = cint.peek_register(pid, cint.EBX) & 0xffffffff
+    addr_from_execution = cint.peek_register(pid, cint.RDI) & 0xffffffff
     logging.debug('Address from trace: %x', addr_from_trace)
     logging.debug('Address from execution: %x', addr_from_execution)
     if addr_from_trace != addr_from_execution:
@@ -395,7 +395,7 @@ def set_tid_address_exit_handler(syscall_id, syscall_object, pid):
 def futex_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering futex entry handler')
     addr_from_trace = int('0x' + syscall_object.args[0].value, 16)
-    addr_from_execution = cint.peek_register(pid, cint.EBX) & 0xffffffff
+    addr_from_execution = cint.peek_register(pid, cint.RDI) & 0xffffffff
     logging.debug('Address from trace: %x', addr_from_trace)
     logging.debug('Address from execution: %x', addr_from_execution)
     if addr_from_trace != addr_from_execution:
@@ -438,7 +438,7 @@ def uname_entry_handler(syscall_id, syscall_object, pid):
             for x in syscall_object.args}
     args = {x.strip('{}'): y.strip('"{}') for x, y in args.iteritems()}
     logging.debug(args)
-    address = cint.peek_register(pid, cint.EBX)
+    address = cint.peek_register(pid, cint.RDI)
     noop_current_syscall(pid)
     cint.populate_uname_structure(pid,
                                   address,
@@ -456,7 +456,7 @@ def getrlimit_entry_handler(syscall_id, syscall_object, pid):
     cmd = syscall_object.args[0].value[0]
     if cmd != 'RLIMIT_STACK':
         raise Exception('Unimplemented getrlimit command {}'.format(cmd))
-    addr = cint.peek_register(pid, cint.ECX)
+    addr = cint.peek_register(pid, cint.RSI)
     rlim_cur = syscall_object.args[1].value.strip('{')
     rlim_cur = rlim_cur.split('=')[1]
     if rlim_cur.find('*') == -1:
@@ -535,7 +535,7 @@ def _tiocgwinsz_handler(pid, addr, syscall_object):
 
 def _fionbio_handler(pid, addr, syscall_object):
     out_val = int(syscall_object.args[2].value.strip('[]'))
-    out_addr = cint.peek_register(pid, cint.EDX)
+    out_addr = cint.peek_register(pid, cint.RDX)
     cint.poke_address(pid, out_addr, out_val)
 
 
@@ -560,13 +560,13 @@ def ioctl_entry_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering ioctl handler')
     validate_integer_argument(pid, syscall_object, 0, 0)
     trace_fd = int(syscall_object.args[0].value)
-    edx = cint.peek_register(pid, cint.EDX)
+    edx = cint.peek_register(pid, cint.RDX)
     logging.debug('edx: %x', edx & 0xffffffff)
     addr = edx
     noop_current_syscall(pid)
     if syscall_object.ret[0] != -1:
         cmd = syscall_object.args[1].value
-        cmd_from_exe = cint.peek_register(pid, cint.ECX)
+        cmd_from_exe = cint.peek_register(pid, cint.RSI)
         _validate_ioctl_cmd(cmd, cmd_from_exe)
          
         # Alan: optimized ioctl handler
@@ -646,7 +646,7 @@ def prlimit64_entry_handler(syscall_id, syscall_object, pid):
         rlim_max = rlim_max.split('*')
         rlim_max = int(rlim_max[0]) * int(rlim_max[1].strip('}'))
         logging.debug('rlim_max: %d', rlim_max)
-        addr = cint.peek_register(pid, cint.ESI)
+        addr = cint.peek_register(pid, cint.RCX)
         logging.debug('addr: %x', addr & 0xFFFFFFFF)
         noop_current_syscall(pid)
         cint.populate_rlimit_structure(pid, addr, rlim_cur, rlim_max)
@@ -685,33 +685,33 @@ def _forge_mmap_with_backing_file(pid, syscall_object, bf):
     logging.debug('Map start address: %x', map_start_addr & 0xffffffff)
     map_size = int(syscall_object.args[1].value)
     logging.debug('Map size: %d', map_size)
-    prot = cint.peek_register(pid, cint.EDX)
+    prot = cint.peek_register(pid, cint.RDX)
     # We must make the mapping writable so we can populate it
     prot = prot | 0x2
-    flags = cint.peek_register(pid, cint.ESI)
+    flags = cint.peek_register(pid, cint.RCX)
     flags = flags | 0x20 # MAP_ANONYMOUS
     flags = flags | 0x10 # MAP_FIXED
     fd = -1
     offset = 0
 
-    save_EBX  = cint.peek_register(pid, cint.EBX)
-    save_ECX  = cint.peek_register(pid, cint.ECX)
-    save_EDX  = cint.peek_register(pid, cint.EDX)
-    save_ESI  = cint.peek_register(pid, cint.ESI)
-    save_EDI  = cint.peek_register(pid, cint.EDI)
-    save_EBP  = cint.peek_register(pid, cint.EBP)
+    save_RDI  = cint.peek_register(pid, cint.RDI)
+    save_RSI  = cint.peek_register(pid, cint.RSI)
+    save_RDX  = cint.peek_register(pid, cint.RDX)
+    save_RCX  = cint.peek_register(pid, cint.RCX)
+    save_R8  = cint.peek_register(pid, cint.R8)
+    save_R9  = cint.peek_register(pid, cint.R9)
 
-    cint.poke_register_unsigned(pid, cint.EBX, map_start_addr)
+    cint.poke_register_unsigned(pid, cint.RDI, map_start_addr)
     # How big of a mapping do we want
-    cint.poke_register_unsigned(pid, cint.ECX, map_size)
+    cint.poke_register_unsigned(pid, cint.RSI, map_size)
     # PROT options
-    cint.poke_register_unsigned(pid, cint.EDX, prot)
+    cint.poke_register_unsigned(pid, cint.RDX, prot)
     # Flags options
-    cint.poke_register_unsigned(pid, cint.ESI, flags)
+    cint.poke_register_unsigned(pid, cint.RCX, flags)
     # fd
-    cint.poke_register(pid, cint.EDI, fd)
+    cint.poke_register(pid, cint.R8, fd)
     # offset
-    cint.poke_register(pid, cint.EBP, offset)
+    cint.poke_register(pid, cint.R9, offset)
 
     # Advance to our crafted mmap's exit
     cint.syscall(pid, 0)
@@ -726,12 +726,12 @@ def _forge_mmap_with_backing_file(pid, syscall_object, bf):
     cint.copy_bytes_into_child_process(pid, map_start_addr, data)
 
    # restore registers
-    cint.poke_register(pid, cint.EBX, save_EBX)
-    cint.poke_register(pid, cint.ECX, save_ECX)
-    cint.poke_register(pid, cint.EDX, save_EDX)
-    cint.poke_register(pid, cint.ESI, save_ESI)
-    cint.poke_register(pid, cint.EDI, save_EDI)
-    cint.poke_register(pid, cint.EBP, save_EBP)
+    cint.poke_register(pid, cint.RDI, save_RDI)
+    cint.poke_register(pid, cint.RSI, save_RSI)
+    cint.poke_register(pid, cint.RDX, save_RDX)
+    cint.poke_register(pid, cint.RCX, save_RCX)
+    cint.poke_register(pid, cint.R8, save_R8)
+    cint.poke_register(pid, cint.R9, save_R9)
 
     # HACK HACK HACK: apply_return_conditions can't handle large addresses
     cint.poke_register_unsigned(pid, cint.EAX, map_start_addr)
@@ -776,7 +776,7 @@ def sched_getaffinity_entry_handler(syscall_id, syscall_object, pid):
         raise NotImplementedError('handler cannot deal with multi-value '
                                   'cpu_sets: {}'
                                   .format(syscall_object.args[2]))
-    cpu_set_addr = cint.peek_register(pid, cint.EDX)
+    cpu_set_addr = cint.peek_register(pid, cint.RDX)
     logging.debug('cpu_set value: %d', cpu_set_val)
     logging.debug('cpu_set address: %d', cpu_set_addr)
     noop_current_syscall(pid)
@@ -814,8 +814,8 @@ def sigaltstack_entry_handler(syscall_id, syscall_object, pid):
     else:
         raise ReplayDeltaError('Invalid parse of syscall_object')
 
-    ss_from_execution = cint.peek_register(pid, cint.EBX)
-    oss_from_execution = cint.peek_register(pid, cint.ECX)
+    ss_from_execution = cint.peek_register(pid, cint.RDI)
+    oss_from_execution = cint.peek_register(pid, cint.RSI)
 
     # Check for delta
     if ((have_oss and (oss_from_execution == 0))
@@ -860,32 +860,32 @@ def _cleanup_ss_flags(ss_flags):
 
 def brk_entry_debug_printer(pid, orig_eax, syscall_object):
     logging.debug('This call tried to use address: %x',
-                  cint.peek_register(pid, cint.EBX))
+                  cint.peek_register(pid, cint.RDI))
 
 
 def mmap2_entry_debug_printer(pid, orig_eax, syscall_object):
     logging.debug('This call tried to mmap2: %d',
-                  cint.peek_register(pid, cint.EDI))
+                  cint.peek_register(pid, cint.R8))
 
 
 def munmap_entry_debug_printer(pid, orig_eax, syscall_object):
     logging.debug('This call tried munmap address: %x length: %d',
-                  cint.peek_register(pid, cint.EBX) & 0xFFFFFFFF,
-                  cint.peek_register(pid, cint.ECX))
+                  cint.peek_register(pid, cint.RDI) & 0xFFFFFFFF,
+                  cint.peek_register(pid, cint.RSI))
 
 
 def ioctl_entry_debug_printer(pid, orig_eax, syscall_object):
     logging.debug('This call used file descriptor: %d',
-                  cint.peek_register(pid, cint.EBX))
+                  cint.peek_register(pid, cint.RDI))
     logging.debug('This call used command: %s',
                   IOCTLS_INT_TO_IOCTL[
-                      cint.peek_register(pid, cint.ECX)])
+                      cint.peek_register(pid, cint.RSI)])
 
 
 def rt_sigaction_entry_debug_printer(pid, orig_eax, syscall_object):
-    signum = cint.peek_register(pid, cint.EBX)
-    newact_addr = cint.peek_register(pid, cint.ECX)
-    oldact_addr = cint.peek_register(pid, cint.EDX)
+    signum = cint.peek_register(pid, cint.RDI)
+    newact_addr = cint.peek_register(pid, cint.RSI)
+    oldact_addr = cint.peek_register(pid, cint.RDX)
     ret = cint.peek_register(pid, cint.EAX)
     logging.debug("This call has signum: %s", SIGNAL_INT_TO_SIG[signum])
     logging.debug("New act address: 0x%x", newact_addr & 0xffffffff)
@@ -896,4 +896,4 @@ def rt_sigaction_entry_debug_printer(pid, orig_eax, syscall_object):
 def rt_sigprocmask_entry_debug_printer(pid, orig_eax, syscall_object):
     logging.debug('This call used command: %s',
                   SIGPROCMASK_INT_TO_CMD[
-                      cint.peek_register(pid, cint.EBX)])
+                      cint.peek_register(pid, cint.RDI)])
