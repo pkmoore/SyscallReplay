@@ -386,8 +386,8 @@ static PyObject *syscallreplay_populate_getdents64_structure(PyObject *self,
         ((struct linux_dirent64*)write_ptr)->d_off = d_off;
         ((struct linux_dirent64*)write_ptr)->d_reclen = d_reclen;
         ((struct linux_dirent64*)write_ptr)->d_type = d_type;
-        strcpy((((struct linux_dirent64*)write_ptr)->d_name),
-               d_name);
+        size_t name_len = strlen(((struct linux_dirent64 *)write_ptr)->d_name);
+        memcpy(((struct linux_dirent64 *)write_ptr)->d_name, d_name, name_len + 1);
         next = PyIter_Next(iter);
         if(DEBUG) {
             printf("C: populate_getdents64: d_ino: %llu\n",
@@ -509,9 +509,9 @@ static PyObject *syscallreplay_populate_getdents_structure(PyObject *self,
         s_offset += sizeof(d_off);
         memcpy(write_ptr + s_offset, &d_reclen, sizeof(d_reclen));
         s_offset += sizeof(d_reclen);
-        strcpy((char *)write_ptr + s_offset, d_name);
-        s_offset += strlen(d_name);
-        s_offset += 1;
+        size_t name_len = strlen((char *)write_ptr + s_offset);
+        memcpy(write_ptr + s_offset, d_name, name_len + 1);
+        s_offset += name_len;
         s_offset += 1;
         write_ptr[s_offset] = d_type;
         if(DEBUG) {
