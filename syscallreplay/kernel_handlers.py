@@ -212,7 +212,7 @@ def rt_sigaction_entry_handler(syscall_id, syscall_object, pid):
                                                     if restorer_value_in_trace
                                                     else 'does not contain'))
 
-        # figure out at what indexes the old_action arguments will start and end at    
+        # figure out at what indexes the old_action arguments will start and end at
         if new_action_found and restorer_value_in_trace:
             old_action_start_pos = 5
         elif new_action_found:
@@ -223,7 +223,7 @@ def rt_sigaction_entry_handler(syscall_id, syscall_object, pid):
         old_action_end_pos = old_action_start_pos + (4 if restorer_value_in_trace
                                                       else 3)
 
-        # seperate out the old_action part of the trace    
+        # seperate out the old_action part of the trace
         old_action_args = syscall_object.args[old_action_start_pos:old_action_end_pos]
 
         logging.debug("ARGUMENTS BEGIN")
@@ -309,7 +309,7 @@ def rt_sigaction_entry_handler(syscall_id, syscall_object, pid):
                                           old_sa_restorer
         )
 
-    # finish 
+    # finish
     apply_return_conditions(pid, syscall_object)
 
 
@@ -568,7 +568,7 @@ def ioctl_entry_handler(syscall_id, syscall_object, pid):
         cmd = syscall_object.args[1].value
         cmd_from_exe = cint.peek_register(pid, cint.RSI)
         _validate_ioctl_cmd(cmd, cmd_from_exe)
-         
+
         # Alan: optimized ioctl handler
         ioctl_handlers = {
             'TCGETS': _tcgets_handler,
@@ -582,7 +582,7 @@ def ioctl_entry_handler(syscall_id, syscall_object, pid):
            #'TCSETS', _tcsets_handler),
            #'FIOCLEX', _fioclex_handler)
         }
-        
+
         # transfer to handler
         try:
             ioctl_handlers[cmd](pid, addr, syscall_object)
