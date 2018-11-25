@@ -6,7 +6,7 @@
 # preserved across the int $0x80.
 #
 # [x86-64]
-# The %rax register for syscall_number and %rdi, %rsi, %rdx, %rcx, %r8 and %r9
+# The %rax register for syscall_number and %rdi, %rsi, %rdx, %r10, %r8 and %r9.
 # are the registers (in order) used to pass integer/pointer (i.e. INTEGER class)
 # parameters to any libc function from assembly. %rdi is used for the first
 # INTEGER parameter. %rsi for 2nd, %rdx for 3rd and so on. Then call instruction
@@ -103,7 +103,7 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     save_RDI  = cint.peek_register(pid, cint.RDI)
     save_RSI  = cint.peek_register(pid, cint.RSI)
     save_RDX  = cint.peek_register(pid, cint.RDX)
-    save_RCX  = cint.peek_register(pid, cint.RCX)
+    save_R10  = cint.peek_register(pid, cint.R10)
     save_R8  = cint.peek_register(pid, cint.R8)
     save_R9  = cint.peek_register(pid, cint.R9)
 
@@ -122,7 +122,7 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     flags = 2 #cint.injected_state['brks'][-1]['flags']
     flags |= 32
     flags |= 16
-    cint.poke_register(pid, cint.RCX, flags)
+    cint.poke_register(pid, cint.R10, flags)
     # fd
     cint.poke_register(pid, cint.R8, -1)
     # offset
@@ -142,7 +142,7 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
     cint.poke_register(pid, cint.RDI, save_RDI)
     cint.poke_register(pid, cint.RSI, save_RSI)
     cint.poke_register(pid, cint.RDX, save_RDX)
-    cint.poke_register(pid, cint.RCX, save_RCX)
+    cint.poke_register(pid, cint.R10, save_R10)
     cint.poke_register(pid, cint.R8, save_R8)
     cint.poke_register(pid, cint.R9, save_R9)
 
@@ -168,7 +168,7 @@ def _brk_debug_print_regs(pid):
     print('RDI: ', cint.peek_register(pid, cint.RDI))
     print('RSI: ', cint.peek_register(pid, cint.RSI))
     print('RDX: ', cint.peek_register(pid, cint.RDX))
-    print('RCX: ', cint.peek_register(pid, cint.RCX))
+    print('R10: ', cint.peek_register(pid, cint.R10))
     print('R8: ', cint.peek_register(pid, cint.R8))
     print('R9: ', cint.peek_register(pid, cint.R9))
 
@@ -646,7 +646,7 @@ def prlimit64_entry_handler(syscall_id, syscall_object, pid):
         rlim_max = rlim_max.split('*')
         rlim_max = int(rlim_max[0]) * int(rlim_max[1].strip('}'))
         logging.debug('rlim_max: %d', rlim_max)
-        addr = cint.peek_register(pid, cint.RCX)
+        addr = cint.peek_register(pid, cint.R10)
         logging.debug('addr: %x', addr & 0xFFFFFFFF)
         noop_current_syscall(pid)
         cint.populate_rlimit_structure(pid, addr, rlim_cur, rlim_max)
@@ -688,7 +688,7 @@ def _forge_mmap_with_backing_file(pid, syscall_object, bf):
     prot = cint.peek_register(pid, cint.RDX)
     # We must make the mapping writable so we can populate it
     prot = prot | 0x2
-    flags = cint.peek_register(pid, cint.RCX)
+    flags = cint.peek_register(pid, cint.R10)
     flags = flags | 0x20 # MAP_ANONYMOUS
     flags = flags | 0x10 # MAP_FIXED
     fd = -1
@@ -697,7 +697,7 @@ def _forge_mmap_with_backing_file(pid, syscall_object, bf):
     save_RDI  = cint.peek_register(pid, cint.RDI)
     save_RSI  = cint.peek_register(pid, cint.RSI)
     save_RDX  = cint.peek_register(pid, cint.RDX)
-    save_RCX  = cint.peek_register(pid, cint.RCX)
+    save_R10  = cint.peek_register(pid, cint.R10)
     save_R8  = cint.peek_register(pid, cint.R8)
     save_R9  = cint.peek_register(pid, cint.R9)
 
@@ -707,7 +707,7 @@ def _forge_mmap_with_backing_file(pid, syscall_object, bf):
     # PROT options
     cint.poke_register_unsigned(pid, cint.RDX, prot)
     # Flags options
-    cint.poke_register_unsigned(pid, cint.RCX, flags)
+    cint.poke_register_unsigned(pid, cint.R10, flags)
     # fd
     cint.poke_register(pid, cint.R8, fd)
     # offset
@@ -729,7 +729,7 @@ def _forge_mmap_with_backing_file(pid, syscall_object, bf):
     cint.poke_register(pid, cint.RDI, save_RDI)
     cint.poke_register(pid, cint.RSI, save_RSI)
     cint.poke_register(pid, cint.RDX, save_RDX)
-    cint.poke_register(pid, cint.RCX, save_RCX)
+    cint.poke_register(pid, cint.R10, save_R10)
     cint.poke_register(pid, cint.R8, save_R8)
     cint.poke_register(pid, cint.R9, save_R9)
 
