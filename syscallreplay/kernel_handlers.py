@@ -1,11 +1,32 @@
 # [x86-32]
-# The %eax register for syscall_number and %ebx, %ecx, %edx, %esi, %edi, and %ebp
-# for passing 6 parameters.
+# The %eax register contains the for syscall_number and registers
+# %ebx, %ecx, %edx, %esi, %edi, and %ebp are used for passing 6
+# parameters.
 #
 # The return value is in %eax. All other registers (including EFLAGS) are
 # preserved across the int $0x80.
 #
-# [x86-64]
+# [x86-64 kernelspace]
+# The kernel interface uses %rdi, %rsi, %rdx, %r10, %r8 and %r9.
+#
+# A system-call is done via the syscall instruction which clobbers %rcx and
+# %r11 (a consequence of how sysret works), as well as %rax, but other
+# registers are preserved.
+#
+# The number of the syscall has to be passed in register %rax.
+#
+# System-calls are limited to six arguments, no argument is passed directly
+# on the stack.
+#
+# Returning from the syscall, register %rax contains the result of the
+# system-call. A value in the range between -4095 and -1 indicates an
+# error, it is -errno.  Only values of class INTEGER or class MEMORY
+# are passed to the kernel.
+#
+# [x86-64 userspace]
+# User-level applications use as integer registers for passing the sequence
+# %rdi, %rsi, %rdx, %rcx, %r8 and %r9.
+#
 # The %rax register for syscall_number and %rdi, %rsi, %rdx, %r10, %r8 and %r9.
 # are the registers (in order) used to pass integer/pointer (i.e. INTEGER class)
 # parameters to any libc function from assembly. %rdi is used for the first
