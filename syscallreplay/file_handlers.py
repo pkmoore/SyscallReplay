@@ -1155,6 +1155,25 @@ def fchmod_entry_handler(syscall_id, syscall_object, pid):
   apply_return_conditions(pid, syscall_object)
 
 
+def fchmodat_entry_handler(syscall_id, syscall_object, pid):
+  """Validate the contents of fchmodat() calls and replay its return value
+
+      Notes:  mode and flags parameters are not checked and probably should be.
+  """
+  logging.debug('Entering fchmod entry handler')
+  if syscall_object.args[0].value != 'AT_FDCWD':
+    validate_integer_argument(pid, syscall_object, 0, 0)
+  name_from_execution = cint.copy_string(pid, cint.peek_register(pid, cint.ECX))
+  name_from_trace = cleanup_quotes(syscall_object.args[1].value)
+  if name_from_trace != name_from_execution:
+    raise ReplayDeltaError('Filename from trace ({}) does not match '
+                           'filename from execution ({})'
+                           .format(filename_from_trace, filename_from_execution))
+  logging.debug('Replaying this system call')
+  noop_current_syscall(pid)
+  apply_return_conditions(pid, syscall_object)
+
+
 def flistxattr_entry_handler(syscall_id, syscall_object, pid):
   logging.debug('In flistxattr entry handler')
   # validate file descriptor
