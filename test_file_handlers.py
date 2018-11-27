@@ -57,14 +57,15 @@ class TestReadlinkEntryHandler(unittest.TestCase):
     syscall_object.args[1] = arg1_obj
     syscall_object.ret = (0,)
     pid = 555
+
+    syscallreplay.file_handlers.readlink_entry_handler(syscall_id, syscall_object, pid)
+
     #  We don't want to hard code in the debug message here in case it
     #  changes
-    syscallreplay.file_handlers.readlink_entry_handler(syscall_id, syscall_object, pid)
     mock_log.assert_called()
     mock_noop.assert_called_with(pid)
-
     peek_register_calls = [mock.call(pid, mock_cint.EBX), mock.call(pid, mock_cint.ECX)]
     mock_cint.peek_register.assert_has_calls(peek_register_calls)
-    mock_cleanup.assert_called_with('"test_filename.txt"')
+    mock_cleanup.assert_called_with('\"test_filename.txt\"')
     mock_cint.populate_char_buffer.assert_called_with(pid, 7777, 'test_filename.txt')
     mock_apply.assert_called_with(pid, syscall_object)
