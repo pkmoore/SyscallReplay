@@ -506,7 +506,15 @@ def clock_gettime_entry_handler(syscall_id, syscall_object, pid):
                                  'differs from trace'
                                  .format(clock_type_from_execution))
     seconds = int(syscall_object.args[1].value.strip('{}'))
-    nanoseconds = int(syscall_object.args[2].value.strip('{}'))
+    # clock_gettime() call might have the tv_sec and tv_nsec labels in the
+    # output structure.  If it does, we need to split() it off.
+    if 'tv_sec' in seconds:
+      seconds = seconds.split('=')[1]
+    seconds = int(seconds)
+    nanoseconds = syscall_object.args[1].value.strip('{}')
+    if 'tv_nsec' in nanoseconds:
+      nanoseconds = nanoseconds.split('=')[1]
+    nanoseconds = int(nanoseconds)
     addr = util.cint.peek_register(pid, util.cint.ECX)
     logging.debug('Seconds: %d', seconds)
     logging.debug('Nanoseconds: %d', nanoseconds)
