@@ -793,7 +793,8 @@ def fstat64_entry_handler(syscall_id, syscall_object, pid):
 
   logging.debug('Entering fstat64 handler')
   validate_integer_argument(pid, syscall_object, 0, 0)
-  _handle_statlike_call(syscall_id, syscall_object, pid)
+  addr = cint.peek_register(pid, cint.ECX)
+  _handle_statlike_call(syscall_id, syscall_object, pid, addr)
 
 
 def _parse_statlike_call_time(value):
@@ -818,9 +819,9 @@ def _parse_statlike_call_time(value):
   # Otherwise, we try the standard parsing we've used in the past
   return string_time_to_int(value)
 
-def _handle_statlike_call(syscall_id_, syscall_object, pid):
-  buf_addr = cint.peek_register_unsigned(pid, cint.ECX)
-  logging.debug('ECX: %x', buf_addr)
+def _handle_statlike_call(syscall_id, syscall_object, pid, buf_addr):
+  logging.debug('Handling stat-like call by populating buffer at: %x',
+                buf_addr)
   noop_current_syscall(pid)
   if syscall_object.ret[0] == -1:
     logging.debug('Got unsuccessful stat-like call')
@@ -949,156 +950,15 @@ def _handle_statlike_call(syscall_id_, syscall_object, pid):
 
 def fstatat64_entry_handler(syscall_id, syscall_object, pid):
   logging.debug('Entering fstatat64 handler')
-  if not syscall_object.args[0].value == 'AT_FDCWD':
-    if not should_replay_based_on_fd(int(syscall_object.args[0].value)):
-      swap_trace_fd_to_execution_fd(pid, 0, syscall_object)
-      return
-  # At this point we replay calls with either AT_FDCWD or replay fds
-  buf_addr = cint.peek_register(pid, cint.EDX)
-  logging.debug('EDX: %x', (buf_addr & 0xffffffff))
   # TODO: Check path name
-  if syscall_object.ret[0] == -1:
-    logging.debug('Got unsuccessful fstatat64 call')
-  else:
-    # HACK: Delete path name so everything lines up nicely
-    syscall_object.args = list(syscall_object.args)
-    del(syscall_object.args[1])
-    syscall_object.args = tuple(syscall_object.args)
-    logging.debug('Got successful fstatat64 call')
-    # There should always be an st_dev
-    idx, arg = find_arg_matching_string(syscall_object.args[1:], 'st_dev')[0]
-    st_dev1 = arg
-    st_dev1 = int(st_dev1.split('(')[1])
-    # must increment idx by 2 in order to account for slicing out the
-    # initial file descriptor
-    st_dev2 = syscall_object.args[idx+2].value[0]
-    st_dev2 = int(st_dev2.strip(')'))
-    logging.debug('st_dev1: %s', st_dev1)
-    logging.debug('st_dev2: %s', st_dev2)
-
-    # st_rdev is optional
-    st_rdev1 = 0
-    st_rdev2 = 0
-    r = find_arg_matching_string(syscall_object.args[1:], 'st_rdev')
-    if len(r) > 0:
-      idx, arg = r[0]
-      logging.debug('We have a st_rdev argument')
-      st_rdev1 = arg
-      st_rdev1 = int(st_rdev1.split('(')[1])
-      st_rdev2 = syscall_object.args[idx+2].value
-      st_rdev2 = int(st_rdev2.strip(')'))
-      logging.debug('st_rdev1: %d', st_rdev1)
-      logging.debug('st_rdev2: %d', st_rdev2)
-
-    # st_ino
-    r = find_arg_matching_string(syscall_object.args[1:], 'st_ino')
-    idx, arg = r[0]
-    st_ino = int(arg.split('=')[1])
-    logging.debug('st_ino: %d', st_ino)
-
-    # st_mode
-    r = find_arg_matching_string(syscall_object.args[1:], 'st_mode')
-    idx, arg = r[0]
-    st_mode = int(cleanup_st_mode(arg.split('=')[1]))
-    logging.debug('st_mode: %d', st_mode)
-
-    # st_nlink
-    r = find_arg_matching_string(syscall_object.args[1:], 'st_nlink')
-    idx, arg = r[0]
-    st_nlink = int(arg.split('=')[1])
-    logging.debug('st_nlink: %d', st_nlink)
-
-    # st_uid
-    r = find_arg_matching_string(syscall_object.args[1:], 'st_uid')
-    idx, arg = r[0]
-    st_uid = int(arg.split('=')[1])
-    logging.debug('st_uid: %d', st_uid)
-
-    # st_gid
-    r = find_arg_matching_string(syscall_object.args[1:], 'st_gid')
-    idx, arg = r[0]
-    st_gid = int(arg.split('=')[1])
-    logging.debug('st_gid: %d', st_gid)
-
-    # st_blocksize
-    r = find_arg_matching_string(syscall_object.args[1:], 'st_blksize')
-    idx, arg = r[0]
-    st_blksize = int(arg.split('=')[1])
-    logging.debug('st_blksize: %d', st_blksize)
-
-    # st_blocks
-    r = find_arg_matching_string(syscall_object.args[1:], 'st_blocks')
-    idx, arg = r[0]
-    st_blocks = int(arg.split('=')[1])
-    logging.debug('st_block: %d', st_blocks)
-
-    # st_size is optional
-    r = find_arg_matching_string(syscall_object.args[1:], 'st_size')
-    if len(r) >= 1:
-      idx, arg = r[0]
-      st_size = int(arg.split('=')[1])
-      logging.debug('st_size: %d', st_size)
-    else:
-      st_size = 0
-      logging.debug('optional st_size not present')
-    # st_atime
-    r = find_arg_matching_string(syscall_object.args[1:], 'st_atime')
-    idx, arg = r[0]
-    value = arg.split('=')[1]
-    if value == '0':
-      logging.debug('Got zero st_atime')
-      st_atime = 0
-    else:
-      logging.debug('Got normal st_atime')
-      st_atime = int(mktime(strptime(value, '%Y/%m/%d-%H:%M:%S')))
-    logging.debug('st_atime: %d', st_atime)
-
-    # st_mtime
-    r = find_arg_matching_string(syscall_object.args[1:], 'st_mtime')
-    idx, arg = r[0]
-    value = arg.split('=')[1]
-    if value == '0':
-      logging.debug('Got zero st_mtime')
-      st_mtime = 0
-    else:
-      logging.debug('Got normal st_mtime')
-      st_mtime = int(mktime(strptime(value, '%Y/%m/%d-%H:%M:%S')))
-    logging.debug('st_mtime: %d', st_mtime)
-
-    # st_ctime
-    r = find_arg_matching_string(syscall_object.args[1:], 'st_ctime')
-    idx, arg = r[0]
-    value = arg.split('=')[1].strip('}')
-    if value == '0':
-      logging.debug('Got zero st_ctime')
-      st_ctime = 0
-    else:
-      logging.debug('Got normal st_ctime')
-      st_ctime = int(mktime(strptime(value, '%Y/%m/%d-%H:%M:%S')))
-    logging.debug('st_ctime: %d', st_ctime)
-
-    logging.debug('Injecting values into structure')
-    logging.debug('pid: %d', pid)
-    logging.debug('addr: %d', buf_addr)
-    cint.populate_stat64_struct(pid,
-                                buf_addr,
-                                int(st_dev1),
-                                int(st_dev2),
-                                st_blocks,
-                                st_nlink,
-                                st_gid,
-                                st_blksize,
-                                int(st_rdev1),
-                                int(st_rdev2),
-                                st_size,
-                                st_mode,
-                                st_uid,
-                                st_ino,
-                                st_ctime,
-                                st_mtime,
-                                st_atime)
-  noop_current_syscall(pid)
-  apply_return_conditions(pid, syscall_object)
+  if not syscall_object.args[0].value == 'AT_FDCWD':
+    validate_integer_argument(pid, syscall_object, 0, 0)
+  # At this point we replay calls with either AT_FDCWD or replay fds
+  addr = cint.peek_register(pid, cint.EDX)
+  # delete dirfd from syscall_object because _handle_statlike_call expects
+  # syscall_object.args to begin with the file name/file descriptor in args[0]
+  del(syscall_object.args[0])
+  _handle_statlike_call(syscall_id, syscall_object, pid, addr)
 
 
 def stat64_entry_handler(syscall_id, syscall_object, pid):
@@ -1122,7 +982,8 @@ def stat64_entry_handler(syscall_id, syscall_object, pid):
                            'filename from trace {}'
                            .format(filename_from_execution,
                                    filename_from_trace))
-  _handle_statlike_call(syscall_id, syscall_object, pid)
+  addr = cint.peek_register(pid, cint.ECX)
+  _handle_statlike_call(syscall_id, syscall_object, pid, addr)
 
 
 def lstat64_entry_handler(syscall_id, syscall_object, pid):
@@ -1134,7 +995,8 @@ def lstat64_entry_handler(syscall_id, syscall_object, pid):
                            'filename from trace {}'
                            .format(filename_from_execution,
                                    filename_from_trace))
-  _handle_statlike_call(syscall_id, syscall_object, pid)
+  addr = cint.peek_register(pid, cint.ECX)
+  _handle_statlike_call(syscall_id, syscall_object, pid, addr)
 
 
 def fchown_entry_handler(syscall_id, syscall_object, pid):
