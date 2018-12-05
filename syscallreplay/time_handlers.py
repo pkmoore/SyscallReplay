@@ -505,6 +505,7 @@ def clock_gettime_entry_handler(syscall_id, syscall_object, pid):
         raise util.ReplayDeltaError('Clock type ({}) from execution '
                                  'differs from trace'
                                  .format(clock_type_from_execution))
+    seconds = syscall_object.args[1].value.strip('{}')
     # clock_gettime() call might have the tv_sec and tv_nsec labels in the
     # output structure.  If it does, we need to split() it off.
     if 'tv_sec' in seconds:
