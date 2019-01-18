@@ -253,7 +253,7 @@ def connect_entry_handler(syscall_id, syscall_object, pid):
 
 def connect_exit_handler(syscall_id, syscall_object, pid):
     ret_val_from_trace = syscall_object.ret[0]
-    ret_val_from_execution = cint.peek_register(pid, cint.EAX)
+    ret_val_from_execution = cint.peek_register(pid, cint.RAX)
     if ret_val_from_execution != ret_val_from_trace:
         raise ReplayDeltaError('Return value from execution ({}) differs '
                                'from return value from trace ({})'
@@ -263,7 +263,7 @@ def connect_exit_handler(syscall_id, syscall_object, pid):
 
 def socket_exit_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering socket exit handler')
-    fd_from_execution = cint.peek_register(pid, cint.EAX)
+    fd_from_execution = cint.peek_register(pid, cint.RAX)
     fd_from_trace = int(syscall_object.ret[0])
     if offset_file_descriptor(fd_from_trace) != fd_from_execution:
         raise ReplayDeltaError('File descriptor from execution ({}) '
@@ -272,7 +272,7 @@ def socket_exit_handler(syscall_id, syscall_object, pid):
                                .format(fd_from_execution, fd_from_trace))
     if fd_from_execution >= 0:
         add_os_fd_mapping(fd_from_execution, fd_from_trace)
-    cint.poke_register(pid, cint.EAX, fd_from_trace)
+    cint.poke_register(pid, cint.RAX, fd_from_trace)
 
 
 # TODO: There is a lot more checking to be done here
@@ -370,7 +370,7 @@ def accept_subcall_entry_handler(syscall_id, syscall_object, pid):
 
 def accept_exit_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering accept exit handler')
-    fd_from_execution = cint.peek_register(pid, cint.EAX)
+    fd_from_execution = cint.peek_register(pid, cint.RAX)
     fd_from_trace = int(syscall_object.ret[0])
     if offset_file_descriptor(fd_from_trace) != fd_from_execution:
         raise ReplayDeltaError('File descriptor from execution ({}) '
@@ -379,7 +379,7 @@ def accept_exit_handler(syscall_id, syscall_object, pid):
                                .format(fd_from_execution, fd_from_trace))
     if fd_from_execution >= 0:
         add_os_fd_mapping(fd_from_execution, fd_from_trace)
-    cint.poke_register(pid, cint.EAX, fd_from_trace)
+    cint.poke_register(pid, cint.RAX, fd_from_trace)
 
 
 def socketcall_debug_printer(pid, orig_eax, syscall_object):

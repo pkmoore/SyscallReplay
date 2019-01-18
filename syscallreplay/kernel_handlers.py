@@ -130,8 +130,8 @@ def brk_entry_handler(syscall_id, syscall_object, pid):
 
 
     # transform current system call to mmap
-    cint.poke_register(pid, cint.ORIG_EAX, 192)
-    cint.poke_register(pid, cint.EAX, 192)
+    cint.poke_register(pid, cint.ORIG_RAX, 192)
+    cint.poke_register(pid, cint.RAX, 192)
     # Where to start our new mapping from
     cint.poke_register(pid, cint.RDI, last_map_end)
     # How big of a mapping do we want
@@ -184,8 +184,8 @@ def _check_flags_and_prot(brks):
         flags_and_prot_ok = True
 
 def _brk_debug_print_regs(pid):
-    print('ORIG_EAX: ', cint.peek_register(pid, cint.ORIG_EAX))
-    print('EAX: ', cint.peek_register(pid, cint.EAX))
+    print('ORIG_RAX: ', cint.peek_register(pid, cint.ORIG_RAX))
+    print('RAX: ', cint.peek_register(pid, cint.RAX))
     print('RDI: ', cint.peek_register(pid, cint.RDI))
     print('RSI: ', cint.peek_register(pid, cint.RSI))
     print('RDX: ', cint.peek_register(pid, cint.RDX))
@@ -429,7 +429,7 @@ def futex_entry_handler(syscall_id, syscall_object, pid):
 def futex_exit_handler(syscall_id, syscall_object, pid):
     logging.debug('Entering futex exit handler')
     ret_val_from_trace = syscall_object.ret[0]
-    ret_val_from_execution = cint.peek_register(pid, cint.EAX) & 0xffffffff
+    ret_val_from_execution = cint.peek_register(pid, cint.RAX) & 0xffffffff
     if ret_val_from_trace != ret_val_from_execution:
         raise ReplayDeltaError('Return value from trace ({}) does not match '
                                'return value from execution ({})'
@@ -755,7 +755,7 @@ def _forge_mmap_with_backing_file(pid, syscall_object, bf):
     cint.poke_register(pid, cint.R9, save_R9)
 
     # HACK HACK HACK: apply_return_conditions can't handle large addresses
-    cint.poke_register_unsigned(pid, cint.EAX, map_start_addr)
+    cint.poke_register_unsigned(pid, cint.RAX, map_start_addr)
     cint.entering_syscall = False
 
 
@@ -771,7 +771,7 @@ def mmap2_exit_handler(syscall_id, syscall_object, pid):
 
     """
     logging.debug('Entering mmap2 exit handler')
-    ret_from_execution = cint.peek_register(pid, cint.EAX)
+    ret_from_execution = cint.peek_register(pid, cint.RAX)
     ret_from_trace = cleanup_return_value(syscall_object.ret[0])
     logging.debug('Return value from execution %x', ret_from_execution)
     logging.debug('Return value from trace %x', ret_from_trace)
@@ -907,7 +907,7 @@ def rt_sigaction_entry_debug_printer(pid, orig_eax, syscall_object):
     signum = cint.peek_register(pid, cint.RDI)
     newact_addr = cint.peek_register(pid, cint.RSI)
     oldact_addr = cint.peek_register(pid, cint.RDX)
-    ret = cint.peek_register(pid, cint.EAX)
+    ret = cint.peek_register(pid, cint.RAX)
     logging.debug("This call has signum: %s", SIGNAL_INT_TO_SIG[signum])
     logging.debug("New act address: 0x%x", newact_addr & 0xffffffff)
     logging.debug("Old act address: 0x%x", oldact_addr & 0xffffffff)

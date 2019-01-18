@@ -99,7 +99,7 @@ def send_exit_handler(syscall_id, syscall_object, pid):
   """
   logging.debug('Entering send exit handler')
   ret_val_from_trace = syscall_object.ret[0]
-  ret_val_from_execution = util.cint.peek_register(pid, util.cint.EAX)
+  ret_val_from_execution = util.cint.peek_register(pid, util.cint.RAX)
   if ret_val_from_execution != ret_val_from_trace:
     raise ReplayDeltaError('Return value from execution ({}) differs '
                            'from return value from trace ({})'
