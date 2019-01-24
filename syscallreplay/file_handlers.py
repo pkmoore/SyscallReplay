@@ -455,13 +455,14 @@ def write_entry_handler(syscall_id, syscall_object, pid):
   * Determine what is not implemented
   """
 
+  cint.enable_debug_output(10)
   logging.debug('write entry handler')
-  validate_integer_argument(pid, syscall_object, 0, 0)
-  validate_integer_argument(pid, syscall_object, 2, 2)
-  bytes_addr = cint.peek_register(pid, cint.RCX)
-  bytes_len = cint.peek_register(pid, cint.RDX)
+#  validate_integer_argument(pid, syscall_object, 0, 0)
+#  validate_integer_argument(pid, syscall_object, 2, 2)
+  bytes_addr = long(cint.peek_register_unsigned(pid, cint.RSI))
+  bytes_len = cint.peek_register_unsigned(pid, cint.RDX)
   bytes_from_trace = cleanup_quotes(syscall_object.args[1].value)
-  bytes_from_execution = cint.copy_address_range(pid, bytes_addr, bytes_addr + bytes_len)
+  bytes_from_execution = cint.copy_address_range(pid, long(bytes_addr), long(bytes_addr + bytes_len))
   bytes_from_trace = bytes_from_trace.decode('string-escape')
   if bytes_from_trace != bytes_from_execution:
     logging.warning ('Bytes from trace don\'t match bytes from execution!')
