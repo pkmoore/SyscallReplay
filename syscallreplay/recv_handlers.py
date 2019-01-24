@@ -193,7 +193,7 @@ def recvfrom_subcall_entry_handler(syscall_id, syscall_object, pid):
       raise util.ReplayDeltaError('Data copied by read() handler doesn\'t '
                                   'match after copy')
     util.apply_return_conditions(pid, syscall_object)
-    print(util.cint.peek_register(pid, util.cint.EAX))
+    print(util.cint.peek_register(pid, util.cint.RAX))
   else:
     logging.info('Not replaying this system call')
     swap_trace_fd_to_execution_fd(pid, 0, syscall_object, params_addr=p)

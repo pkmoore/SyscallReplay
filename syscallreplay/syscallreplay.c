@@ -105,19 +105,19 @@ int copy_child_process_memory_into_buffer(pid_t child,
                                           unsigned char *buffer,
                                           size_t buf_length){
     unsigned char *buf_addr = buffer;
-    size_t peeks = buf_length - (sizeof(int) - 1 );
-    unsigned int i;
+    size_t peeks = buf_length - (sizeof(long) - 1 );
+    unsigned long i;
     if(DEBUG) {
         printf("C: peek_buffer: number of peeks: %zu\n", peeks);
     }
     // Special case for buffers smaller than one int-sized write
-    if(buf_length < sizeof(int)) {
+    if(buf_length < sizeof(long)) {
         if(DEBUG) {
             printf("C: peek_buffer: got a small peek\n");
         }
         union {
-            unsigned int data;
-            unsigned char bytes[sizeof(int)];
+            unsigned long data;
+            unsigned char bytes[sizeof(long)];
         } temp_buffer = {0};
         size_t num_rest = sizeof temp_buffer - buf_length;
         temp_buffer.data = ptrace(PTRACE_PEEKDATA, child, addr, NULL);
@@ -139,7 +139,7 @@ int copy_child_process_memory_into_buffer(pid_t child,
         }
     }
     else {
-        unsigned int t;
+        unsigned long t;
         for(i = 0; i < peeks; i++) {
             if(DEBUG) {
                 printf("%zu\n", peeks);
@@ -155,7 +155,7 @@ int copy_child_process_memory_into_buffer(pid_t child,
             if(DEBUG) {
                 printf("%02X\n", t);
             }
-            memcpy(&buf_addr[i], &t, sizeof(int));
+            memcpy(&buf_addr[i], &t, sizeof(long));
             addr = (char *)addr + 1;
         }
     }
@@ -186,11 +186,12 @@ int copy_buffer_into_child_process_memory(pid_t child,
         if(DEBUG) {
             printf("C: copy_buffer: got a small write\n");
         }
-        unsigned char temp_buffer[4];
-        *((int *)&temp_buffer) = (int)ptrace(PTRACE_PEEKDATA, child, addr, NULL);
+        unsigned char temp_buffer[sizeof(long)] = {0};
+        long res = ptrace(PTRACE_PEEKDATA, child, addr, NULL);
+        memcpy(temp_buffer, &res, sizeof res);
         if(DEBUG) {
             printf("Peeked data: ");
-            for(i = 0; i < 4; i++) {
+            for(i = 0; i < sizeof(long); i++) {
                 printf("%02X ", temp_buffer[i]);
             }
             printf("\n");
@@ -200,12 +201,12 @@ int copy_buffer_into_child_process_memory(pid_t child,
         }
         if(DEBUG) {
             printf("'Diff'd data: ");
-            for(i = 0; i < 4; i++) {
+            for(i = 0; i < sizeof(long); i++) {
                 printf("%02X ", temp_buffer[i]);
             }
             printf("\n");
         }
-        if((ptrace(PTRACE_POKEDATA, child, addr, *((int *)&temp_buffer)) == -1)) {
+        if((ptrace(PTRACE_POKEDATA, child, addr, (long *)temp_buffer) == -1)) {
             PyErr_SetString(SyscallReplayError,
                             "Failed to poke small buffer in copy buffer");
         }
@@ -385,8 +386,8 @@ static PyObject *syscallreplay_populate_getdents64_structure(PyObject *self,
         ((struct linux_dirent64*)write_ptr)->d_off = d_off;
         ((struct linux_dirent64*)write_ptr)->d_reclen = d_reclen;
         ((struct linux_dirent64*)write_ptr)->d_type = d_type;
-        strcpy((((struct linux_dirent64*)write_ptr)->d_name),
-               d_name);
+        size_t name_len = strlen(((struct linux_dirent64 *)write_ptr)->d_name);
+        memcpy(((struct linux_dirent64 *)write_ptr)->d_name, d_name, name_len + 1);
         next = PyIter_Next(iter);
         if(DEBUG) {
             printf("C: populate_getdents64: d_ino: %llu\n",
@@ -426,7 +427,7 @@ static PyObject *syscallreplay_populate_getdents_structure(PyObject *self,
     }
     if(DEBUG) {
         printf("C: populate_getdents: child %d\n", child);
-        printf("C: populate_getdents: addr %p\n", (void *)addr);
+        printf("C: populate_getdents: addr %p\n", addr);
     }
 
     if(!PyList_Check(dents)) {
@@ -508,9 +509,9 @@ static PyObject *syscallreplay_populate_getdents_structure(PyObject *self,
         s_offset += sizeof(d_off);
         memcpy(write_ptr + s_offset, &d_reclen, sizeof(d_reclen));
         s_offset += sizeof(d_reclen);
-        strcpy((char *)write_ptr + s_offset, d_name);
-        s_offset += strlen(d_name);
-        s_offset += 1;
+        size_t name_len = strlen((char *)write_ptr + s_offset);
+        memcpy(write_ptr + s_offset, d_name, name_len + 1);
+        s_offset += name_len;
         s_offset += 1;
         write_ptr[s_offset] = d_type;
         if(DEBUG) {
@@ -540,7 +541,7 @@ static PyObject *syscallreplay_populate_pipefd_array(PyObject *self,
     }
     if(DEBUG) {
         printf("C: popiulate_pipefd_array: child %d\n", child);
-        printf("C: popiulate_pipefd_array: addr %p\n", (void *)addr);
+        printf("C: popiulate_pipefd_array: addr %p\n", addr);
         printf("C: popiulate_pipefd_array: read_end: %u\n", read_end);
         printf("C: popiulate_pipefd_array: write_end %u\n", write_end);
     }
@@ -561,11 +562,13 @@ static PyObject *syscallreplay_copy_address_range(PyObject *self,
     void *start;
     void *end;
     unsigned char *buf;
-    if(!PyArg_ParseTuple(args, "III", &child, &start, &end)) {
+    if(!PyArg_ParseTuple(args, "KKK", &child, &start, &end)) {
         PyErr_SetString(SyscallReplayError,
                         "copy_address_range arg parse failed");
     }
     if(DEBUG) {
+        printf("sizeof int: %d\n", sizeof(int));
+        printf("sizeof void*: %d\n", sizeof(void*));
         printf("C: copy_address_range: child: %d\n", child);
         printf("C: copy_address_range: start: %p\n", start);
         printf("C: copy_address_range: end: %p\n", end);
@@ -685,7 +688,7 @@ static PyObject *syscallreplay_populate_timespec_structure(PyObject *self,
     }
     if(DEBUG) {
         printf("C: timespec: child: %d\n", child);
-        printf("C: timespec: addr: %p\n", (void *)addr);
+        printf("C: timespec: addr: %p\n", addr);
         printf("C: timespec: seconds: %lu\n", seconds);
         printf("C: timespec: nanoseconds: %ld\n", nanoseconds);
         printf("C: timespec: sizeof(seconds): %zu\n", sizeof(seconds));
@@ -720,7 +723,7 @@ static PyObject *syscallreplay_populate_itimerspec_structure(PyObject *self,
     }
     if(DEBUG) {
         printf("C: itimerspec: child: %d\n", child);
-        printf("C: itimerspec: addr: %p\n", (void *)addr);
+        printf("C: itimerspec: addr: %p\n", addr);
         printf("C: itimerspec: interval seconds: %zu\n", interval_seconds);
         printf("C: itimerspec: interval nanoseconds: %ld\n", interval_nanoseconds);
         printf("C: itimerspec: interval sizeof(seconds): %zu\n", sizeof(interval_seconds));
@@ -762,14 +765,14 @@ static PyObject *syscallreplay_populate_timer_t_structure(PyObject *self,
 
   if(DEBUG) {
     printf("C: timer_t: child: %d \n", child);
-    printf("C: timer_t: addr: %p \n", (void *)addr);
+    printf("C: timer_t: addr: %p \n", addr);
     printf("C: timer_t: timerid: %d \n", timerid);
   }
 
   timer_t id = (timer_t)(unsigned long)timerid;
 
   if (DEBUG) {
-    printf("C: check timer_t: timerid: %d \n", (int)id);
+    printf("C: check timer_t: timerid: %lu \n", (unsigned long)(void *)id);
   }
 
   copy_buffer_into_child_process_memory(child, addr, (unsigned char *)&id, sizeof(id));
@@ -789,7 +792,7 @@ static PyObject *syscallreplay_populate_timeval_structure(PyObject *self,
     }
     if(DEBUG) {
         printf("C: timeval: child: %d\n", child);
-        printf("C: timeval: addr: %p\n", (void *)addr);
+        printf("C: timeval: addr: %p\n", addr);
         printf("C: timeval: seconds: %ld\n", seconds);
         printf("C: timeval: microseconds: %ld\n", microseconds);
         printf("C: timeval: sizeof(seconds): %zu\n", sizeof(seconds));
@@ -827,7 +830,7 @@ static PyObject *syscallreplay_copy_bytes_into_child_process(PyObject *self,
             printf("%02X ", bytes[i]);
         }
     }
-    copy_buffer_into_child_process_memory(child, addr, (unsigned char *)bytes, num_bytes);
+    copy_buffer_into_child_process_memory(child, addr, bytes, num_bytes);
 
     Py_RETURN_NONE;
 }
@@ -847,7 +850,7 @@ static PyObject *syscallreplay_populate_winsize_structure(PyObject *self,
     }
     if(DEBUG) {
         printf("child: %d\n", child);
-        printf("addr: %p\n", (void *)addr);
+        printf("addr: %p\n", addr);
         printf("ws_row: %d\n", ws_row);
         printf("ws_col: %d\n", ws_col);
         printf("ws_xpixel: %d\n", ws_xpixel);
@@ -890,7 +893,7 @@ static PyObject *syscallreplay_populate_af_inet_sockaddr(PyObject *self,
                      &port, &ip, &length_addr, &length);
     if(DEBUG) {
         printf("C: pop af_inet: child: %u\n", child);
-        printf("C: pop af_inet: addr: %p\n", (void *)addr);
+        printf("C: pop af_inet: addr: %p\n", addr);
         printf("C: pop af_inet: port: %u\n", port);
         printf("C: pop af_inet: ip: %s\n", ip);
         printf("C: pop af_inet: length: %u\n", length);
@@ -939,7 +942,7 @@ static PyObject *tracreplay_populate_statfs64_structure(PyObject *self,
                      &f_fsid1, &f_fsid2, &f_namelen, &f_frsize, &f_flags);
     if(DEBUG) {
         printf("C: statfs64: child: %u\n", child);
-        printf("C: statfs64: addr: %p\n", (void *)addr);
+        printf("C: statfs64: addr: %p\n", addr);
         printf("C: statfs64: f_type: %lx\n", f_type);
         printf("C: statfs64: f_bsize: %ld\n", f_bsize);
         printf("C: statfs64: f_blocks: %ld\n", f_blocks);
@@ -990,7 +993,7 @@ static PyObject *syscallreplay_populate_tcgets_response(PyObject *self,
                      (unsigned char *)&c_line, &cc_bytes, &cc_bytes_length);
     if(DEBUG) {
         printf("C: tcgets: child %u\n", child);
-        printf("C: tcgets: addr %p\n", (void *)addr);
+        printf("C: tcgets: addr %p\n", addr);
         printf("C: tcgets: c_iflag %x\n", c_iflag);
         printf("C: tcgets: c_oflag %x\n", c_oflag);
         printf("C: tcgets: c_cflag %x\n", c_cflag);
@@ -1045,7 +1048,7 @@ static PyObject *syscallreplay_populate_rlimit_structure(PyObject *self,
                      (long long *)&rlim_cur, (long long *)&rlim_max);
     if(DEBUG) {
         printf("C: getrlimit: child %u\n", (int)child);
-        printf("C: getrlimit: addr %u\n", (int)addr);
+        printf("C: getrlimit: addr %lu\n", (unsigned long)addr);
         printf("C: getrlimit: rlim_cur %lld\n", (long long)rlim_cur);
         printf("C: getrlimit: rlim_max %llx\n", (long long)rlim_max);
         printf("C: getrlimit: sizeof rlimit %zu\n", sizeof(struct rlimit));
@@ -1082,7 +1085,7 @@ static PyObject *syscallreplay_populate_uname_structure(PyObject *self,
                      &nodename, &release, &version, &machine, &domainname);
     if(DEBUG) {
         printf("C: uname: child %u\n", (int)child);
-        printf("C: uname: addr %u\n", (int)addr);
+        printf("C: uname: addr %lu\n", (unsigned long)addr);
         printf("C: uname: sysname %s\n", sysname);
         printf("C: uname: nodename %s\n", nodename);
         printf("C: uname: release %s\n", release);
@@ -1114,7 +1117,7 @@ static PyObject *syscallreplay_populate_char_buffer(PyObject *self,
                      &data, &data_length);
     if(DEBUG) {
         printf("C: pop_char_buf: child: %u\n", child);
-        printf("C: pop_char_buf: addr: %x\n", (int)addr);
+        printf("C: pop_char_buf: addr: %lx\n", (unsigned long)addr);
         printf("C: pop_char_buf: data: %s\n", data);
         printf("C: pop_char_buf: data_length %u\n", data_length);
     }
@@ -1136,7 +1139,7 @@ static PyObject *syscallreplay_populate_int(PyObject *self,
     }
     if(DEBUG) {
         printf("C: pop_int: child: %u\n", child);
-        printf("C: pop_int: addr: %p\n", (void *)addr);
+        printf("C: pop_int: addr: %p\n", addr);
         printf("C: pop_int: data: %u\n", data);
     }
     copy_buffer_into_child_process_memory(child,
@@ -1157,7 +1160,7 @@ static PyObject *syscallreplay_populate_unsigned_int(PyObject *self,
     }
     if(DEBUG) {
         printf("C: pop_unsigned_int: child: %u\n", child);
-        printf("C: pop_unsigned_int: addr: %p\n", (void *)addr);
+        printf("C: pop_unsigned_int: addr: %p\n", addr);
         printf("C: pop_unsigned_int: data: %u\n", data);
     }
     copy_buffer_into_child_process_memory(child,
@@ -1177,17 +1180,17 @@ static PyObject *syscallreplay_populate_stack_structure(PyObject *self,
 
     if(!PyArg_ParseTuple(args, "IIiiI", (int *)&child,
                          (int *)&addr,
-                         (int *)&ss_sp,
-                         (int *)&ss_flags,
+                         &ss_sp,
+                         &ss_flags,
                          (unsigned int *)&ss_size)) {
         PyErr_SetString(SyscallReplayError,
                         "populate_stack arg parse failed");
     }
     if(DEBUG) {
-        printf("C: populate_stack: child %u\n", (int)child);
-        printf("C: populate_stack: addr: %u\n", (int)addr);
-        printf("C: populate_stack: ss_sp: %u\n", (int)ss_sp);
-        printf("C: populate_stack: ss_flags: %u\n", (int)ss_flags);
+        printf("C: populate_stack: child %u\n", child);
+        printf("C: populate_stack: addr: %p\n", addr);
+        printf("C: populate_stack: ss_sp: %p\n", ss_sp);
+        printf("C: populate_stack: ss_flags: %u\n", ss_flags);
         printf("C: populate_stack: ss_size: %u\n", (unsigned int)ss_size);
     }
 
@@ -1209,14 +1212,14 @@ static PyObject *syscallreplay_populate_cpu_set(PyObject *self,
     int cpu_value;
     if(!PyArg_ParseTuple(args, "IIi", (int *)&child,
                                       (int *)&addr,
-                                      (int *)&cpu_value)) {
+                                      &cpu_value)) {
         PyErr_SetString(SyscallReplayError,
                         "populate_cpu_set arg parse failed");
     }
     if(DEBUG) {
-        printf("C: cpu_set: child: %u\n", (int)child);
-        printf("C: cpu_set: addr: %u\n", (int)addr);
-        printf("C: cpu_set: cpu_value: %u\n", (int)cpu_value);
+        printf("C: cpu_set: child: %u\n", (unsigned)child);
+        printf("C: cpu_set: addr: %lx\n", (unsigned long)addr);
+        printf("C: cpu_set: cpu_value: %u\n", (unsigned)cpu_value);
     }
     cpu_set_t set;
     CPU_SET(cpu_value, &set);
@@ -1234,8 +1237,8 @@ static PyObject *syscallreplay_populate_llseek_result(PyObject *self,
     loff_t result;
     PyArg_ParseTuple(args, "IIL", (int *)&child, (int *)&addr, (int *)&result);
     if(DEBUG) {
-        printf("C: llseek: child: %u\n", (int)child);
-        printf("C: llseek: addr: %u\n", (int)addr);
+        printf("C: llseek: child: %u\n", (unsigned)child);
+        printf("C: llseek: addr: %lx\n", (unsigned long)addr);
         printf("C: llseek: result: %lld\n", (long long)result);
     }
     copy_buffer_into_child_process_memory(child,
@@ -1255,12 +1258,12 @@ static PyObject *syscallreplay_populate_rt_sigaction_struct(PyObject *self,
 
   struct ksigaction oldact;
   void *        oldact_addr;
-  int           old_sa_handler; // this could also be void *but not yet implemented
-  PyObject *   mask_sig_list;
+  unsigned long old_sa_handler; // this could also be void *but not yet implemented
+  PyObject     *mask_sig_list;
   sigset_t      old_sa_mask;
   unsigned int  old_sa_flags;
-  void *        old_sa_restorer;  // no longer used, but in sigaction struct when VDSO off
-  //  void *    old_sa_sigaction = NULL; // use not implemented yet, see kernelhandlers.py
+  void         *old_sa_restorer;  // no longer used, but in sigaction struct when VDSO off
+  /* void         *old_sa_sigaction = NULL; // use not implemented yet, see kernelhandlers.py */
 
   bool argument_population_failed = !PyArg_ParseTuple(args,
                                                       "IIIOII",
@@ -1277,10 +1280,10 @@ static PyObject *syscallreplay_populate_rt_sigaction_struct(PyObject *self,
 
   if (DEBUG) {
     printf("C: populate_sigaction: read arguments: child %u \n", child);
-    printf("C: populate_sigaction: read arguments: oldact_addr %p \n", (void *)oldact_addr);
-    printf("C: populate_sigaction: read arguments: sa_handler %u \n",  old_sa_handler);
+    printf("C: populate_sigaction: read arguments: oldact_addr %p \n", oldact_addr);
+    printf("C: populate_sigaction: read arguments: sa_handler %lx \n",  old_sa_handler);
     printf("C: populate_sigaction: read arguments: old_sa_flags %p at %p \n", (void *)(unsigned long)old_sa_flags, (void *)&old_sa_mask);
-    printf("C: populate_sigaction: read arguments: sa_restorer %p \n", (void *) old_sa_restorer);
+    printf("C: populate_sigaction: read arguments: sa_restorer %p \n", old_sa_restorer);
    }
 
 
@@ -1288,7 +1291,7 @@ static PyObject *syscallreplay_populate_rt_sigaction_struct(PyObject *self,
     copy_child_process_memory_into_buffer(child, oldact_addr, (unsigned char *)&oldact, sizeof(oldact));
 
   // Note: cant set handler and sigaction at same time as use same memory
-  oldact.k_sa_handler = (void *)old_sa_handler;
+  oldact.k_sa_handler = (void (*)(int))old_sa_handler;
   oldact.sa_flags = old_sa_flags;
   oldact.sa_restorer = old_sa_restorer;
 
@@ -1323,10 +1326,10 @@ static PyObject *syscallreplay_populate_rt_sigaction_struct(PyObject *self,
 
    if (DEBUG) {
      printf("C: Read sigaction: sigaction at %p \n", (void *)&test);
-     printf("C: Read sigaction: sa_handler %p at %p \n", (void *)test.k_sa_handler, (void *)&(test.k_sa_handler));
-     printf("C: Read sigaction: sa_flags %p at %p \n", (void *)test.sa_flags, (void *)&(test.sa_flags));
+     printf("C: Read sigaction: sa_handler %p at %p \n", *(void **)&test.k_sa_handler, (void *)&(test.k_sa_handler));
+     printf("C: Read sigaction: sa_flags %p at %p \n", (void *)(long)test.sa_flags, (void *)&(test.sa_flags));
      printf("C: Read sigaction: sa_mask at %p \n", (void *)&test.sa_mask);
-     printf("C: Read sigaction: sa_restorer %p at %p \n", (void *)test.sa_restorer, (void *)&(test.sa_restorer));
+     printf("C: Read sigaction: sa_restorer %p at %p \n", test.sa_restorer, (void *)&(test.sa_restorer));
    }
 
   Py_RETURN_NONE;
@@ -1381,7 +1384,7 @@ static PyObject *syscallreplay_populate_stat64_struct(PyObject *self,
     }
     if(DEBUG) {
         printf("C: populate_stat64: child %u\n", child);
-        printf("C: populate_stat64: addr %p\n", (void *)addr);
+        printf("C: populate_stat64: addr %p\n", addr);
         printf("C: populate_stat64: s %p\n", (void *)&s);
         printf("C: populate_stat64: sizeof(s) %zu\n", sizeof(s));
         printf("C: populate_stat64: st_mode %lu\n", st_mode);
@@ -1457,7 +1460,7 @@ static PyObject *syscallreplay_get_select_fds(PyObject *self,
     }
     if(DEBUG) {
         printf("C: get_select_fds: child: %u\n", child);
-        printf("C: get_select_fds: addr: %p\n", (void *)addr);
+        printf("C: get_select_fds: addr: %p\n", addr);
     }
     PyObject *list = PyList_New(0);
     int i;
@@ -1498,9 +1501,9 @@ static PyObject *syscallreplay_populate_select_bitmaps(PyObject *self,
     fd_set tmp;
     if(DEBUG) {
         printf("C: Select: child: %u\n", child);
-        printf("C: Select: readfds_addr: %p\n", (void *)readfds_addr);
-        printf("C: Select: write_addr: %p\n", (void *)writefds_addr);
-        printf("C: Select: exceptfds_addr: %p\n", (void *)exceptfds_addr);
+        printf("C: Select: readfds_addr: %p\n", readfds_addr);
+        printf("C: Select: write_addr: %p\n", writefds_addr);
+        printf("C: Select: exceptfds_addr: %p\n", exceptfds_addr);
         printf("C: Select: ================\n");
         printf("C: Select: sizeof(tmp): %lu\n", sizeof(tmp));
     }
@@ -1613,7 +1616,7 @@ static PyObject *syscallreplay_is_select_fd_set(PyObject *self, PyObject *args) 
     }
     if(DEBUG) {
         printf("C: is_select_fd: child: %d\n", child);
-        printf("C: is_select_fd: fdset_addr: %p\n", (void *)fdset_addr);
+        printf("C: is_select_fd: fdset_addr: %p\n", fdset_addr);
         printf("C: is_select_fd: fd: %d\n", fd);
     }
     fd_set tmp;
@@ -1655,28 +1658,28 @@ static PyObject *syscallreplay_disable_debug_output(PyObject *self, PyObject *ar
 }
 
 void init_constants(PyObject *m) {
-    if(PyModule_AddIntConstant(m, "ORIG_EAX", ORIG_EAX) == -1) {
+    if(PyModule_AddIntConstant(m, "ORIG_RAX", ORIG_RAX) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "EAX", EAX) == -1) {
+    if(PyModule_AddIntConstant(m, "RAX", RAX) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "EBX", EBX) == -1) {
+    if(PyModule_AddIntConstant(m, "RBX", RBX) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "ECX", ECX) == -1) {
+    if(PyModule_AddIntConstant(m, "RCX", RCX) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "EDX", EDX) == -1) {
+    if(PyModule_AddIntConstant(m, "RDX", RDX) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "ESI", ESI) == -1) {
+    if(PyModule_AddIntConstant(m, "RSI", RSI) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "EDI", EDI) == -1) {
+    if(PyModule_AddIntConstant(m, "RDI", RDI) == -1) {
         return;
     }
-    if(PyModule_AddIntConstant(m, "EBP", EBP) == -1) {
+    if(PyModule_AddIntConstant(m, "RBP", RBP) == -1) {
         return;
     }
 
@@ -1746,14 +1749,14 @@ static PyObject *syscallreplay_peek_register_unsigned(PyObject *self,
         perror("Register Peek Failed");
         return NULL;
     }
-    return Py_BuildValue("I", extracted_register);
+    return Py_BuildValue("K", extracted_register);
 }
 
 static PyObject *syscallreplay_poke_register(PyObject *self, PyObject *args) {
     pid_t child;
     int reg;
     long int value;
-    PyArg_ParseTuple(args, "IIi", &child, &reg, &value);
+    PyArg_ParseTuple(args, "KKK", &child, &reg, &value);
     if(DEBUG) {
         printf("C: poke_register: child: %u\n", child);
         printf("C: poke_register: reg: %u\n", reg);
@@ -1999,7 +2002,7 @@ static PyObject *syscallreplay_write_sendmmsg_lengths(PyObject *self,
     }
     if(DEBUG) {
         printf("C: sendmmsg_lengths: child: %u\n", child);
-        printf("C: sendmmsg_lengths: addr: %x\n", (int)addr);
+        printf("C: sendmmsg_lengths: addr: %lx\n", (unsigned long)addr);
         printf("C: sendmmsg_lengths: num: %zu\n", num);
     }
     if(!PyList_Check(list_of_lengths)) {

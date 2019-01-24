@@ -86,7 +86,7 @@ def check_return_value_exit_handler(syscall_id, syscall_object, pid):
 
   """
   logging.debug('check_return_value exit handler')
-  ret_from_execution = syscallreplay.peek_register(pid, syscallreplay.EAX)
+  ret_from_execution = syscallreplay.peek_register(pid, syscallreplay.RAX)
   ret_from_trace = util.cleanup_return_value(syscall_object.ret[0])
   logging.debug('Return value from execution %x', ret_from_execution)
   logging.debug('Return value from trace %x', ret_from_trace)

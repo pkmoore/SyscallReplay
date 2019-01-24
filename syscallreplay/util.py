@@ -105,7 +105,7 @@ def noop_current_syscall(pid):
   logging.debug('Nooping the current system call in pid: %s', pid)
   # Transform the current system call in the child process into a call to
   # getpid() by poking 20 into ORIG_EAX
-  cint.poke_register(pid, cint.ORIG_EAX, 20)
+  cint.poke_register(pid, cint.ORIG_RAX, 20)
   # Tell ptrace we want the child process to stop at the next system call
   # event and restart its execution.
   cint.syscall(pid, 0)
@@ -117,7 +117,7 @@ def noop_current_syscall(pid):
   # Take a look at the current system call (i.e. the one that triggered the
   # notification we just received from ptrace).  It should be getpid().  If
   # it isnt, something has gone horribly wrong and we must bail out.
-  skipping = cint.peek_register(pid, cint.ORIG_EAX)
+  skipping = cint.peek_register(pid, cint.ORIG_RAX)
   if skipping != 20:
     raise Exception('Nooping did not result in getpid exit. Got {}'
                     .format(skipping))
@@ -338,7 +338,7 @@ def apply_return_conditions(pid, syscall_object):
     else:
         ret_val = cleanup_return_value(ret_val)
     logging.debug('Injecting return value %s', ret_val)
-    cint.poke_register(pid, cint.EAX, ret_val)
+    cint.poke_register(pid, cint.RAX, ret_val)
 
 
 # Generic handler for all calls that just need to return what they returned in
@@ -401,11 +401,11 @@ def validate_integer_argument(pid,
                   trace_arg,
                   exec_arg)
     # EAX is the system call number
-    POS_TO_REG = {0: cint.EBX,
-                  1: cint.ECX,
-                  2: cint.EDX,
-                  3: cint.ESI,
-                  4: cint.EDI}
+    POS_TO_REG = {0: cint.RBX,
+                  1: cint.RCX,
+                  2: cint.RDX,
+                  3: cint.RSI,
+                  4: cint.RDI}
     if not params:
         arg = cint.peek_register(pid, POS_TO_REG[exec_arg])
     else:
