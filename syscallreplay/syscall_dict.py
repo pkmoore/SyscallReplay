@@ -10,7 +10,7 @@
 
 SYSCALLS = {
   0: 'sys_restart_syscall',
-  1: 'sys_exit',
+  1: 'sys_write',
   2: 'sys_fork',
   3: 'sys_read',
   4: 'sys_write',
