@@ -105,19 +105,19 @@ int copy_child_process_memory_into_buffer(pid_t child,
                                           unsigned char *buffer,
                                           size_t buf_length){
     unsigned char *buf_addr = buffer;
-    size_t peeks = buf_length - (sizeof(int) - 1 );
-    unsigned int i;
+    size_t peeks = buf_length - (sizeof(long) - 1 );
+    unsigned long i;
     if(DEBUG) {
         printf("C: peek_buffer: number of peeks: %zu\n", peeks);
     }
     // Special case for buffers smaller than one int-sized write
-    if(buf_length < sizeof(int)) {
+    if(buf_length < sizeof(long)) {
         if(DEBUG) {
             printf("C: peek_buffer: got a small peek\n");
         }
         union {
-            unsigned int data;
-            unsigned char bytes[sizeof(int)];
+            unsigned long data;
+            unsigned char bytes[sizeof(long)];
         } temp_buffer = {0};
         size_t num_rest = sizeof temp_buffer - buf_length;
         temp_buffer.data = ptrace(PTRACE_PEEKDATA, child, addr, NULL);
@@ -139,7 +139,7 @@ int copy_child_process_memory_into_buffer(pid_t child,
         }
     }
     else {
-        unsigned int t;
+        unsigned long t;
         for(i = 0; i < peeks; i++) {
             if(DEBUG) {
                 printf("%zu\n", peeks);
@@ -155,7 +155,7 @@ int copy_child_process_memory_into_buffer(pid_t child,
             if(DEBUG) {
                 printf("%02X\n", t);
             }
-            memcpy(&buf_addr[i], &t, sizeof(int));
+            memcpy(&buf_addr[i], &t, sizeof(long));
             addr = (char *)addr + 1;
         }
     }
@@ -562,11 +562,13 @@ static PyObject *syscallreplay_copy_address_range(PyObject *self,
     void *start;
     void *end;
     unsigned char *buf;
-    if(!PyArg_ParseTuple(args, "III", &child, &start, &end)) {
+    if(!PyArg_ParseTuple(args, "KKK", &child, &start, &end)) {
         PyErr_SetString(SyscallReplayError,
                         "copy_address_range arg parse failed");
     }
     if(DEBUG) {
+        printf("sizeof int: %d\n", sizeof(int));
+        printf("sizeof void*: %d\n", sizeof(void*));
         printf("C: copy_address_range: child: %d\n", child);
         printf("C: copy_address_range: start: %p\n", start);
         printf("C: copy_address_range: end: %p\n", end);
@@ -1747,14 +1749,14 @@ static PyObject *syscallreplay_peek_register_unsigned(PyObject *self,
         perror("Register Peek Failed");
         return NULL;
     }
-    return Py_BuildValue("I", extracted_register);
+    return Py_BuildValue("K", extracted_register);
 }
 
 static PyObject *syscallreplay_poke_register(PyObject *self, PyObject *args) {
     pid_t child;
     int reg;
     long int value;
-    PyArg_ParseTuple(args, "IIi", &child, &reg, &value);
+    PyArg_ParseTuple(args, "KKK", &child, &reg, &value);
     if(DEBUG) {
         printf("C: poke_register: child: %u\n", child);
         printf("C: poke_register: reg: %u\n", reg);
