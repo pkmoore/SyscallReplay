@@ -37,10 +37,10 @@ class TestReadlinkEntryHandler(unittest.TestCase):
     mock_cint.ORIG_EAX = 1
     def _peek_register(pid, reg):
       # fake filename buffer
-      if reg == mock_cint.EBX:
+      if reg == mock_cint.RDI:
         return 6666
       # fake output buffer
-      if reg == mock_cint.ECX:
+      if reg == mock_cint.RSI:
         return 7777
     mock_cint.peek_register = mock.Mock(side_effect=_peek_register)
     mock_populate_char_buffer = mock.Mock()
@@ -64,7 +64,7 @@ class TestReadlinkEntryHandler(unittest.TestCase):
     #  changes
     mock_log.assert_called()
     mock_noop.assert_called_with(pid)
-    peek_register_calls = [mock.call(pid, mock_cint.EBX), mock.call(pid, mock_cint.ECX)]
+    peek_register_calls = [mock.call(pid, mock_cint.RDI), mock.call(pid, mock_cint.RSI)]
     mock_cint.peek_register.assert_has_calls(peek_register_calls)
     mock_cleanup.assert_called_with('\"test_filename.txt\"')
     mock_cint.populate_char_buffer.assert_called_with(pid, 7777, 'test_filename.txt')

@@ -536,15 +536,15 @@ def readlink_entry_handler(syscall_id, syscall_object, pid):
   mmap()'d at some point
   """
   logging.debug('Entering readlink entry handler')
-  rbx = cint.peek_register(pid, cint.RDI)
+  rdi = cint.peek_register(pid, cint.RDI)
   # Check the filename
-  fn_from_execution = peek_string(pid, rbx)
+  fn_from_execution = cint.copy_string(pid, rdi)
   fn_from_trace = cleanup_quotes(syscall_object.args[0].value)
   if fn_from_execution != fn_from_trace:
     raise ReplayDeltaError('File name from execution ({}) does not match '
                           'file name from trace ({})'
                           .format(fn_from_execution, fn_from_trace))
-  array_addr = cint.peek_register(pid, cint.RCX)
+  array_addr = cint.peek_register(pid, cint.RSI)
   data = cleanup_quotes(syscall_object.args[1].value)
   data_length = int(syscall_object.ret[0])
   noop_current_syscall(pid)
