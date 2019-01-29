@@ -87,7 +87,7 @@ class TestCheckReturnValueExitHandler(unittest.TestCase):
 
     """
 
-    mock_syscallreplay.EAX = 4
+    mock_syscallreplay.RAX = 4
     mock_syscallreplay.peek_register = mock.Mock(return_value=4)
 
     syscall_id = 4
@@ -96,5 +96,5 @@ class TestCheckReturnValueExitHandler(unittest.TestCase):
     pid = 555
     syscallreplay.generic_handlers.check_return_value_exit_handler(syscall_id, syscall_object, pid)
     mock_clean.assert_called_with(syscall_object.ret[0])
-    mock_syscallreplay.peek_register.assert_called_with(pid, mock_syscallreplay.EAX)
+    mock_syscallreplay.peek_register.assert_called_with(pid, mock_syscallreplay.RAX)
     mock_log.assert_called()

@@ -147,7 +147,7 @@ class TestNoopCurrentSyscall(unittest.TestCase):
     ptrace_syscall_signalno = 0
 
     mock_syscallreplay.poke_register = mock.Mock()
-    mock_syscallreplay.ORIG_EAX = mock.Mock()
+    mock_syscallreplay.ORIG_RAX = mock.Mock()
     mock_syscallreplay.syscall = mock.Mock()
     mock_syscallreplay.peek_register = mock.Mock(return_value=getpid_syscallno)
     mock_syscallreplay.entering_syscall = True
@@ -155,10 +155,10 @@ class TestNoopCurrentSyscall(unittest.TestCase):
     syscallreplay.util.noop_current_syscall(pid)
 
     mock_log.assert_called()
-    mock_syscallreplay.poke_register.assert_called_with(pid, mock_syscallreplay.ORIG_EAX, getpid_syscallno)
+    mock_syscallreplay.poke_register.assert_called_with(pid, mock_syscallreplay.ORIG_RAX, getpid_syscallno)
     mock_syscallreplay.syscall.assert_called_with(pid, ptrace_syscall_signalno)
     mock_next.assert_called()
-    mock_syscallreplay.peek_register(pid, mock_syscallreplay.ORIG_EAX)
+    mock_syscallreplay.peek_register(pid, mock_syscallreplay.ORIG_RAX)
     self.assertEqual(mock_syscallreplay.entering_syscall, False)
 
 
@@ -177,7 +177,7 @@ class TestNoopCurrentSyscall(unittest.TestCase):
     ptrace_syscall_signalno = 0
 
     mock_syscallreplay.poke_register = mock.Mock()
-    mock_syscallreplay.ORIG_EAX = mock.Mock()
+    mock_syscallreplay.ORIG_RAX = mock.Mock()
     mock_syscallreplay.syscall = mock.Mock()
     mock_syscallreplay.peek_register = mock.Mock(return_value=bad_syscallno)
     mock_syscallreplay.entering_syscall = True
@@ -185,10 +185,10 @@ class TestNoopCurrentSyscall(unittest.TestCase):
     self.assertRaises(Exception, syscallreplay.util.noop_current_syscall, pid)
 
     mock_log.assert_called()
-    mock_syscallreplay.poke_register.assert_called_with(pid, mock_syscallreplay.ORIG_EAX, getpid_syscallno)
+    mock_syscallreplay.poke_register.assert_called_with(pid, mock_syscallreplay.ORIG_RAX, getpid_syscallno)
     mock_syscallreplay.syscall.assert_called_with(pid, ptrace_syscall_signalno)
     mock_next.assert_called()
-    mock_syscallreplay.peek_register(pid, mock_syscallreplay.ORIG_EAX)
+    mock_syscallreplay.peek_register(pid, mock_syscallreplay.ORIG_RAX)
     self.assertEqual(mock_syscallreplay.entering_syscall, True)
 
 
