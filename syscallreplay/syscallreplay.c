@@ -594,7 +594,7 @@ static PyObject *syscallreplay_copy_string(PyObject *self,
     char *value_ptr;
     bool got_null;
     PyObject *result;
-    if(!PyArg_ParseTuple(args, "II", &child, &addr)) {
+    if(!PyArg_ParseTuple(args, "IK", &child, &addr)) {
         PyErr_SetString(SyscallReplayError, "copy_string arg parse failed");
         Py_RETURN_NONE;
     }
@@ -1113,7 +1113,7 @@ static PyObject *syscallreplay_populate_char_buffer(PyObject *self,
     void *addr;
     unsigned char *data;
     int data_length;
-    PyArg_ParseTuple(args, "IIs#", (int *)&child, (int *)&addr,
+    PyArg_ParseTuple(args, "IKs#", (int *)&child, &addr,
                      &data, &data_length);
     if(DEBUG) {
         printf("C: pop_char_buf: child: %u\n", child);
@@ -1875,7 +1875,7 @@ static PyObject *syscallreplay_waitpid(PyObject *self, PyObject *args) {
     perror("Waitpid failed!");
     PyErr_SetString(SyscallReplayError, "Waitpid failed");
   }
-  return Py_BuildValue("i", status);
+  return Py_BuildValue("I", status);
 }
 
 static PyObject *syscallreplay_poke_address(PyObject *self, PyObject *args) {
