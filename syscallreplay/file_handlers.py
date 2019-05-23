@@ -30,6 +30,7 @@ from util import (cleanup_quotes,
                   string_time_to_int,
                   stop_for_debug,)
 
+logging = logging.getLogger('root')
 
 def eventfd2_entry_handler(syscall_id, syscall_object, pid):
   """Replay Always
