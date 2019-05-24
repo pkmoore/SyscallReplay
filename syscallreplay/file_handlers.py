@@ -927,7 +927,6 @@ def _handle_statlike_call(syscall_id, syscall_object, pid, buf_addr):
 
     logging.debug('pid: %d', pid)
     logging.debug('addr: %x', buf_addr)
-    cint.enable_debug_output(10)
     cint.populate_stat64_struct(pid,
                                 buf_addr,
                                 int(st_dev1),

@@ -610,7 +610,6 @@ def utimensat_entry_handler(syscall_id, syscall_object, pid):
   #logging.debug('Timespec1 seconds: %d nseconds: %d',
   #            timespec1_seconds,
   #            timespec1_nseconds)
-  #util.cint.enable_debug_output(10)
   #util.cint.populate_timespec_structure(pid,
   #                               timespec0_addr,
   #                               timespec0_seconds,
